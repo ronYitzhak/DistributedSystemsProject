@@ -1,4 +1,5 @@
-package PACKAGE_NAME;
-
 public class Hello {
+    public void Main() {
+        System.out.println("Hello");
+    }
 }
