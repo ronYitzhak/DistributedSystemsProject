@@ -8,12 +8,9 @@ import java.util.HashMap;
 
 @SpringBootApplication
 public class RestServer {
-    public static void main(String argv[]) {
-
-//        SpringApplication.run(RestServer.class, argv);
+    public static void run(int port) {
         HashMap<String, Object> props = new HashMap<>();
-        props.put("server.port", 9999);
-
+        props.put("server.port", port);
         new SpringApplicationBuilder()
                 .sources(RestServer.class)
                 .properties(props)
