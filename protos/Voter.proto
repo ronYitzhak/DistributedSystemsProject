@@ -4,7 +4,7 @@ import "Admin.proto";
 
 message VoteRequest {
     string voterName = 1;
-    string candidateId = 2;
+    int32 candidateId = 2;
     int32 state = 3;
 }
 

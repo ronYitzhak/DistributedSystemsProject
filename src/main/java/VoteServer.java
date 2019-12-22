@@ -131,7 +131,21 @@ public class VoteServer extends VoterGrpc.VoterImplBase implements Watcher {
 
     @Override
     public void vote(VoterOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
-        super.vote(request, responseObserver);
+        var startPath = root + "/Start";
+        try {
+            if (zooKeeper.exists(startPath, true) == null) {
+                LOG.warn("Application not started");
+                return;
+            }
+        } catch (KeeperException e) {
+            e.printStackTrace();
+            LOG.error("KeeperException - should not get here");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            LOG.error("InterruptedException - should not get here");
+        }
+        while (isPending.compareAndExchange(false, true));
+        lastVote = new Pair<>(request.getVoterName(), request.getCandidateId());
     }
 
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
