@@ -61,7 +61,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         createIfNotExists(statePath, CreateMode.PERSISTENT);
         createIfNotExists(statePath + "/LiveNodes", CreateMode.PERSISTENT);
         createIfNotExists(statePath + "/Commit", CreateMode.PERSISTENT);
-        serverPath = zooKeeper.create(statePath + "/LiveNodes", selfAddress.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
+        serverPath = zooKeeper.create(statePath + "/LiveNodes/", selfAddress.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL_SEQUENTIAL);
     }
 
