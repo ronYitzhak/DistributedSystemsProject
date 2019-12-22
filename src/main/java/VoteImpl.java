@@ -20,23 +20,17 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     private static ZooKeeper zooKeeper;
     private static String root = "/Election";
 
-    // gRPC:
-    private Server grpcVoteServer;
-
-    //votes - Map from the voter to the candidate id
-    private HashMap<String, Integer> votes = new HashMap<>();
-    //votesCount - Map from candidate id to his total votes count
-    private HashMap<Integer, Integer> votesCount = new HashMap<>();
-    //lastVote - vote pending to be committed
-    private Pair<String,Integer> lastVote = null;
-    //isPending
+    private HashMap<String, Integer> votes = new HashMap<>(); // Map from the voter to the candidate id
+    private HashMap<Integer, Integer> votesCount = new HashMap<>(); // Map from candidate id to his total votes count
+    private Pair<String,Integer> lastVote = null; // vote pending to be committed
     private AtomicBoolean isPending = new AtomicBoolean(false);
-    //the gRPC address of the server
-    private String selfAddress;
-    //the state number of the server
+    private String selfAddress; // the gRPC address of the server
     private int stateNumber;
     private String serverPath;
     private String statePath;
+
+    // gRPC:
+    private Server grpcVoteServer;
 
     private VoteImpl(String selfAddress, int stateNumber, int grpcPort, String zkHost) throws IOException {
         //this.id = id;
