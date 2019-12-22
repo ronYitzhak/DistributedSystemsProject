@@ -57,20 +57,18 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     }
 
     private void propose() throws KeeperException, InterruptedException {
-        if (zooKeeper.exists(root, true) == null) {
-            zooKeeper.create(root, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        }
-        if (zooKeeper.exists(statePath, true) == null) {
-            zooKeeper.create(statePath, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        }
-        if (zooKeeper.exists(statePath + "/LiveNodes", true) == null) {
-            zooKeeper.create(statePath + "/LiveNodes", new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        }
-        if (zooKeeper.exists(statePath + "/Commit", true) == null) {
-            zooKeeper.create(statePath + "/Commit", String.valueOf(0).getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        }
+        createIfNotExists(root, CreateMode.PERSISTENT);
+        createIfNotExists(statePath, CreateMode.PERSISTENT);
+        createIfNotExists(statePath + "/LiveNodes", CreateMode.PERSISTENT);
+        createIfNotExists(statePath + "/Commit", CreateMode.PERSISTENT);
         serverPath = zooKeeper.create(statePath + "/LiveNodes", selfAddress.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL_SEQUENTIAL);
+    }
+
+    private void createIfNotExists(String path, CreateMode createMode) throws KeeperException, InterruptedException {
+        if (zooKeeper.exists(path, true) == null) {
+            zooKeeper.create(root, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
+        }
     }
 
     private void onNodeDataChanged(String nodeName) {
