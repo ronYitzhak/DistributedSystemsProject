@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class VoteServer implements Watcher {
-    protected static final Logger LOG = LoggerFactory.getLogger(VoteServer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VoteServer.class);
     private static ZooKeeper zooKeeper;
     private static String root = "/Election";
 
@@ -104,6 +104,8 @@ public class VoteServer implements Watcher {
     }
 
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
+        org.apache.log4j.BasicConfigurator.configure();
+        var voteServer = new VoteServer(500, 2, 2020, "127.0.0.1:2181");
         //TODO: get parameter for builder from user\commandline\somehow
         var voteServer = new VoteServer("127.0.0.1:2020", 2, 2020, "127.0.0.1:2181");
         voteServer.propose();
