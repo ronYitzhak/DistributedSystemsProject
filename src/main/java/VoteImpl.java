@@ -35,7 +35,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     // gRPC:
     private Server grpcVoteServer;
 
-    private VoteImpl(String selfAddress, String state, int grpcPort) throws IOException {
+    public VoteImpl(String selfAddress, String state, int grpcPort) throws IOException {
         this.selfAddress = selfAddress;
         this.state = state;
         this.statePath = root + "/" + state;
@@ -59,7 +59,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         }
     }
 
-    private void propose() throws KeeperException, InterruptedException {
+    public void propose() throws KeeperException, InterruptedException {
         ZooKeeperService.createNodeIfNotExists(root, CreateMode.PERSISTENT, new byte[]{});
         ZooKeeperService.createNodeIfNotExists(statePath, CreateMode.PERSISTENT, new byte[]{});
         ZooKeeperService.createNodeIfNotExists(statePath + "/LiveNodes", CreateMode.PERSISTENT, new byte[]{});
