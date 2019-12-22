@@ -34,28 +34,28 @@ public class VoteServer implements Watcher {
         zooKeeper = new ZooKeeper(zkHost, 3000, this);
         // TODO: initialize gRPC port
         //TODO: init all canindates to count 0
-        LOG.info("VoteServer of state " + String.valueOf(stateNumber) + " created!");
+        LOG.info("VoteServer of state " + stateNumber + " created!");
     }
 
     private void propose() throws KeeperException, InterruptedException {
         if (zooKeeper.exists(root, true) == null) {
             zooKeeper.create(root, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
-        if (zooKeeper.exists(root + "/" + String.valueOf(stateNumber), true) == null) {
-            zooKeeper.create(root + "/" + String.valueOf(stateNumber), new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        if (zooKeeper.exists(root + "/" + stateNumber, true) == null) {
+            zooKeeper.create(root + "/" + stateNumber, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
-        if (zooKeeper.exists(root + "/" + String.valueOf(stateNumber) + "/LiveNodes", true) == null) {
-            zooKeeper.create(root + "/" + String.valueOf(stateNumber) + "/LiveNodes", new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        if (zooKeeper.exists(root + "/" + stateNumber + "/LiveNodes", true) == null) {
+            zooKeeper.create(root + "/" + stateNumber + "/LiveNodes", new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
-        if (zooKeeper.exists(root + "/" + String.valueOf(stateNumber) + "/Commit", true) == null) {
-            zooKeeper.create(root + "/" + String.valueOf(stateNumber) + "/Commit", String.valueOf(0).getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        if (zooKeeper.exists(root + "/" + stateNumber + "/Commit", true) == null) {
+            zooKeeper.create(root + "/" + stateNumber + "/Commit", String.valueOf(0).getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
         serverPath = zooKeeper.create(root + "/", selfAddress.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL_SEQUENTIAL);
     }
 
     private void onNodeDataChanged(String nodeName) {
-        if (!nodeName.equals(root + "/" + String.valueOf(stateNumber) + "/Commit")) return;
+        if (!nodeName.equals(root + "/" + stateNumber + "/Commit")) return;
         LOG.info("Server: " + this.toString() + " commit NodeDataChanged");
         if (!(isPending.get() && lastVote != null)) return; //for safety
         LOG.info("Server: " + this.toString() + " isPending");
@@ -65,12 +65,12 @@ public class VoteServer implements Watcher {
             int oldVote = votes.get(voterName);
             int oldCount = votesCount.get(oldVote);
             votesCount.put(oldVote, oldCount - 1);
-            LOG.info("Server: " + this.toString() + " voterName: "+voterName +" oldVote: "+ String.valueOf(oldVote));
+            LOG.info("Server: " + this.toString() + " voterName: "+voterName +" oldVote: "+ oldVote);
         }
         votes.put(voterName, newVote);
         int oldCount = votesCount.get(newVote);
         votesCount.put(newVote, oldCount + 1);
-        LOG.info("Server: " + this.toString() + " voterName: "+voterName +" newVote: "+ String.valueOf(newVote));
+        LOG.info("Server: " + this.toString() + " voterName: "+voterName +" newVote: "+ newVote);
         lastVote = null;
         isPending.set(false);
     }
@@ -105,7 +105,6 @@ public class VoteServer implements Watcher {
 
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
         org.apache.log4j.BasicConfigurator.configure();
-        var voteServer = new VoteServer(500, 2, 2020, "127.0.0.1:2181");
         //TODO: get parameter for builder from user\commandline\somehow
         var voteServer = new VoteServer("127.0.0.1:2020", 2, 2020, "127.0.0.1:2181");
         voteServer.propose();
