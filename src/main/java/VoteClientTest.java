@@ -32,7 +32,7 @@ public class VoteClientTest {
     }
 
     public static void main(String[] args) throws Exception {
-        org.apache.log4j.BasicConfigurator.configure();
+//        org.apache.log4j.BasicConfigurator.configure();
         var galsIp = "192.168.43.247";
         VoteClientTest client = new VoteClientTest("127.0.0.1:55555");
         client.vote("gal", "0", "California");

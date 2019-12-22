@@ -291,7 +291,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     }
 
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
-        org.apache.log4j.BasicConfigurator.configure();
+//        org.apache.log4j.BasicConfigurator.configure();
 
         //TODO: get parameter for builder from user\commandline\somehow
         Scanner input = new Scanner(System.in);
