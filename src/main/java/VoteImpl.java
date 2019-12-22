@@ -123,9 +123,14 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     @Override
     public void vote(VoterOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
         var startPath = root + "/Start";
+        AdminOuterClass.Void rep = AdminOuterClass.Void
+                .newBuilder()
+                .build();
+        responseObserver.onNext(rep);
         try {
             if (zooKeeper.exists(startPath, true) == null) {
                 LOG.warn("Application not started");
+                responseObserver.onCompleted();
                 return;
             }
         } catch (KeeperException e) {
@@ -137,6 +142,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         }
         while (isPending.compareAndExchange(false, true));
         lastVote = new Pair<>(request.getVoterName(), request.getCandidateId());
+        responseObserver.onCompleted();
     }
 
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
