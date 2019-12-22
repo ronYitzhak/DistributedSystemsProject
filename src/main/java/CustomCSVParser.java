@@ -3,7 +3,7 @@ import com.opencsv.CSVReader;
 import java.io.FileReader;
 import java.util.HashSet;
 
-public class CSVParser {
+public class CustomCSVParser {
     private static final String candidatesFileName = "candidates.csv";
     private static final String stateClientsFileName = "stateClients.csv";
 

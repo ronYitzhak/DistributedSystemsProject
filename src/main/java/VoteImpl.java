@@ -44,8 +44,8 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         zooKeeper = new ZooKeeper(zkHost, 3000, this);
         initGrpcVoteServer(grpcPort);
         //TODO: init all canindates to count 0
-        HashSet<String> stateClients = CSVParser.getClientsPerState(state);
-        HashSet<String> candidates = CSVParser.getCandidates();
+        HashSet<String> stateClients = CustomCSVParser.getClientsPerState(state);
+        HashSet<String> candidates = CustomCSVParser.getCandidates();
         LOG.info("VoteServer of state " + state + " created!");
     }
 
