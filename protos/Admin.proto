@@ -4,11 +4,11 @@ package protos;
 message Void {}
 
 message StateStatusRequest {
-    int32 state = 1;
+    string state = 1;
 }
 
 message CandidateStateStatus {
-    int32 candidateId = 1;
+    string candidateName = 1;
     int32 count = 2;
 }
 
@@ -16,12 +16,12 @@ message StateStatusResponse {
     string state = 1;
     repeated CandidateStateStatus candidatesStatus = 2;
     int32 numberOfElectors = 3;
-    int32 leadingCandidate = 4;
+    string leadingCandidateName = 4;
 }
 
 message GlobalStatusResponse {
     repeated StateStatusResponse candidatesStatus = 1;
-    int32 leadingCandidate = 2;
+    string leadingCandidateName = 2;
 }
 
 service Admin {

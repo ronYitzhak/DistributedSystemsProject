@@ -22,10 +22,10 @@ public class VoteClientTest {
         channel.shutdown();
     }
 
-    public void vote(String voterName, int candidateId, int state) {
+    public void vote(String voterName, String candidateName, String state) {
         VoterOuterClass.VoteRequest v = VoterOuterClass.VoteRequest.newBuilder()
                 .setVoterName(voterName)
-                .setCandidateId(candidateId)
+                .setCandidateName(candidateName)
                 .setState(state)
                 .build();
         stub.vote(v);
@@ -35,7 +35,7 @@ public class VoteClientTest {
         org.apache.log4j.BasicConfigurator.configure();
         var galsIp = "192.168.43.247";
         VoteClientTest client = new VoteClientTest(galsIp, 50051);
-        client.vote("gal", 0, 1);
+        client.vote("gal", "0", "1");
         client.shutdown();
     }
 

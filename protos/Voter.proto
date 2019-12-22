@@ -4,8 +4,8 @@ import "Admin.proto";
 
 message VoteRequest {
     string voterName = 1;
-    int32 candidateId = 2;
-    int32 state = 3;
+    string candidateName = 2;
+    string state = 3;
 }
 
 service Voter {

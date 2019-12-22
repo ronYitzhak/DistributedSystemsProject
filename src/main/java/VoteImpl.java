@@ -13,6 +13,7 @@ import protos.VoterOuterClass;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
@@ -20,27 +21,29 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     private static ZooKeeper zooKeeper;
     private static String root = "/Election";
 
-    private HashMap<String, Integer> votes = new HashMap<>(); // Map from the voter to the candidate id
-    private HashMap<Integer, Integer> votesCount = new HashMap<>(); // Map from candidate id to his total votes count
-    private Pair<String,Integer> lastVote = null; // vote pending to be committed
+    private HashMap<String, String> votes = new HashMap<>(); // clientName -> candidateName
+    private HashMap<String, Integer> votesCount = new HashMap<>(); // candidateName -> total votes count
+    private Pair<String, String> lastVote = null; // vote pending to be committed (clientName -> candidateName)
     private AtomicBoolean isPending = new AtomicBoolean(false);
     private String selfAddress; // the gRPC address of the server
-    private int stateNumber;
+    private String state;
     private String serverPath;
     private String statePath;
 
     // gRPC:
     private Server grpcVoteServer;
 
-    private VoteImpl(String selfAddress, int stateNumber, int grpcPort, String zkHost) throws IOException {
+    private VoteImpl(String selfAddress, String state, int grpcPort, String zkHost) throws IOException {
         //this.id = id;
         this.selfAddress = selfAddress;
-        this.stateNumber = stateNumber;
-        this.statePath = root + "/" + stateNumber;
+        this.state = state;
+        this.statePath = root + "/" + state;
         zooKeeper = new ZooKeeper(zkHost, 3000, this);
         initGrpcVoteServer(grpcPort);
         //TODO: init all canindates to count 0
-        LOG.info("VoteServer of state " + stateNumber + " created!");
+        HashSet<String> stateClients = CSVParser.getClientsPerState(state);
+        HashSet<String> candidates = CSVParser.getCandidates();
+        LOG.info("VoteServer of state " + state + " created!");
     }
 
     private void initGrpcVoteServer(int grpcPort) {
@@ -77,9 +80,9 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         if (!(isPending.get() && lastVote != null)) return; //for safety
         LOG.info("Server: " + this.toString() + " isPending");
         String voterName = lastVote.getValue0();
-        int newVote = lastVote.getValue1();
+        String newVote = lastVote.getValue1();
         if (votes.containsKey(voterName)) {
-            int oldVote = votes.get(voterName);
+            String oldVote = votes.get(voterName);
             int oldCount = votesCount.get(oldVote);
             votesCount.put(oldVote, oldCount - 1);
             LOG.info("Server: " + this.toString() + " voterName: "+voterName +" oldVote: "+ oldVote);
@@ -114,7 +117,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     public String toString() {
         return "VoteServer{" +
                 "selfAddress='" + selfAddress + '\'' +
-                ", stateNumber=" + stateNumber +
+                ", stateNumber=" + state +
                 ", serverPath='" + serverPath + '\'' +
                 '}';
     }
@@ -140,7 +143,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
             LOG.error("InterruptedException - should not get here");
         }
         while (isPending.compareAndExchange(false, true));
-        lastVote = new Pair<>(request.getVoterName(), request.getCandidateId());
+        lastVote = new Pair<>(request.getVoterName(), request.getCandidateName());
         responseObserver.onCompleted();
     }
 
@@ -148,7 +151,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         org.apache.log4j.BasicConfigurator.configure();
 
         //TODO: get parameter for builder from user\commandline\somehow
-        var voteServer = new VoteImpl("127.0.0.1:50051", 1, 50051, "127.0.0.1:2181");
+        var voteServer = new VoteImpl("127.0.0.1:50051", "california", 50051, "127.0.0.1:2181");
         voteServer.propose();
         System.out.println("Hello");
         while (true) {}
