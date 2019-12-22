@@ -67,7 +67,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
 
     private void createIfNotExists(String path, CreateMode createMode) throws KeeperException, InterruptedException {
         if (zooKeeper.exists(path, true) == null) {
-            zooKeeper.create(root, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
+            zooKeeper.create(path, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
         }
     }
 
@@ -142,7 +142,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
         org.apache.log4j.BasicConfigurator.configure();
         //TODO: get parameter for builder from user\commandline\somehow
-        var voteServer = new VoteImpl("127.0.0.1:2020", 2, 2020, "127.0.0.1:2181");
+        var voteServer = new VoteImpl("127.0.0.1:50051", 1, 50051, "127.0.0.1:2181");
         voteServer.propose();
         System.out.println("Hello");
         while (true) {}
