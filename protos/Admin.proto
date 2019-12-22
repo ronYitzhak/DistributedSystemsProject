@@ -1,0 +1,32 @@
+syntax = "proto3";
+package protos;
+
+message Void {}
+
+message StateStatusRequest {
+    int32 state = 1;
+}
+
+message CandidateStateStatus {
+    int32 candidateId = 1;
+    int32 count = 2;
+}
+
+message StateStatusResponse {
+    string state = 1;
+    repeated CandidateStateStatus candidatesStatus = 2;
+    int32 numberOfElectors = 3;
+    int32 leadingCandidate = 4;
+}
+
+message GlobalStatusResponse {
+    repeated StateStatusResponse candidatesStatus = 1;
+    int32 leadingCandidate = 2;
+}
+
+service Admin {
+    rpc Start (Void) returns (Void) {}
+    rpc Stop (Void) returns (Void) {}
+    rpc GetStatus (StateStatusRequest) returns (StateStatusResponse) {}
+    rpc GetGlobalStatus (Void) returns (GlobalStatusResponse) {}
+}

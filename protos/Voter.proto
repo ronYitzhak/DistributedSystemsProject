@@ -1,0 +1,13 @@
+syntax = "proto3";
+package protos;
+import "Admin.proto";
+
+message VoteRequest {
+    string voterName = 1;
+    string candidateId = 2;
+    int32 state = 3;
+}
+
+service Voter {
+    rpc Vote (VoteRequest) returns (Void) {}
+}
