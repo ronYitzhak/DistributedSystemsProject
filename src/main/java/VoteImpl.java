@@ -106,7 +106,6 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
             case DataWatchRemoved:
             case NodeCreated:
             case None:
-                LOG.info("Server: " + this.toString() + " WE ARE DOOMED!");
                 break;
         }
     }
@@ -147,6 +146,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
 
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
         org.apache.log4j.BasicConfigurator.configure();
+
         //TODO: get parameter for builder from user\commandline\somehow
         var voteServer = new VoteImpl("127.0.0.1:50051", 1, 50051, "127.0.0.1:2181");
         voteServer.propose();

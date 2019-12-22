@@ -102,6 +102,12 @@
             <version>5.2.2.RELEASE</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>4.1</version>
+        </dependency>
+
     </dependencies>
 
 </project>
