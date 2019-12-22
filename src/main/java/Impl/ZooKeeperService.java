@@ -1,3 +1,5 @@
+package Impl;
+
 import org.apache.zookeeper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +20,20 @@ public class ZooKeeperService {
         } catch (IOException e) {
             LOG.error("Could not initialize zoo keeper. host: " + zkHost);
             e.printStackTrace();
+        }
+    }
+
+    public static String createSeqNode(String path, CreateMode createMode, byte[] data) { // should have /
+        try {
+            return zooKeeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
+        } catch (KeeperException e) {
+            LOG.error("KeeperException - should not get here");
+            e.printStackTrace();
+            return "";
+        } catch (InterruptedException e) {
+            LOG.error("InterruptedException - should not get here");
+            e.printStackTrace();
+            return "";
         }
     }
 
@@ -62,7 +78,7 @@ public class ZooKeeperService {
 
     public static String getMasterByState(String state) {
         List<String> nodes;
-        var statePath = "/Election/" + state;
+        var statePath = "/Application.Election/" + state;
         try {
             nodes = zooKeeper.getChildren(statePath + "/LiveNodes", true);
             Collections.sort(nodes);

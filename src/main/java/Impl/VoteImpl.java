@@ -1,3 +1,5 @@
+package Impl;
+
 import io.grpc.stub.StreamObserver;
 import org.apache.zookeeper.*;
 import org.javatuples.Pair;
@@ -17,8 +19,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     private static final Logger LOG = LoggerFactory.getLogger(VoteImpl.class);
-    private static String root = "/Election";
-    private static String startPath = "/Election/Start";
+    private static String root = "/Application.Election";
+    private static String startPath = "/Application.Election/Start";
 
     private HashMap<String, String> votes = new HashMap<>(); // clientName -> candidateName
     private HashMap<String, Integer> votesCount = new HashMap<>(); // candidateName -> total votes count
@@ -64,7 +66,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         ZooKeeperService.createNodeIfNotExists(statePath, CreateMode.PERSISTENT, new byte[]{});
         ZooKeeperService.createNodeIfNotExists(statePath + "/LiveNodes", CreateMode.PERSISTENT, new byte[]{});
         ZooKeeperService.createNodeIfNotExists(statePath + "/Commit", CreateMode.PERSISTENT, new byte[]{0});
-        serverPath = ZooKeeperService.createNodeIfNotExists(statePath + "/LiveNodes/", CreateMode.EPHEMERAL_SEQUENTIAL, selfAddress.getBytes());
+        serverPath = ZooKeeperService.createSeqNode(statePath + "/LiveNodes/", CreateMode.EPHEMERAL_SEQUENTIAL, selfAddress.getBytes());
         //define watchers
         ZooKeeperService.setWatcherOnNode(startPath);
         ZooKeeperService.setWatcherOnChildren(statePath + "/LiveNodes");

@@ -1,10 +1,9 @@
+package Impl;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.apache.zookeeper.server.quorum.Vote;
 import protos.VoterGrpc;
 import protos.VoterOuterClass;
-
-import java.util.Iterator;
 
 public class VoteClientTest {
     private VoterGrpc.VoterBlockingStub stub;
@@ -31,7 +30,7 @@ public class VoteClientTest {
         stub.masterVote(v);
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 //        org.apache.log4j.BasicConfigurator.configure();
         var galsIp = "192.168.43.247";
         VoteClientTest client = new VoteClientTest("127.0.0.1:55555");
