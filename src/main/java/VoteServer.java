@@ -1,17 +1,28 @@
+import io.grpc.stub.StreamObserver;
 import org.apache.zookeeper.*;
 import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
+
+import protos.AdminOuterClass;
+import protos.VoterGrpc;
+import protos.VoterOuterClass;
 
 import java.awt.*;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class VoteServer implements Watcher {
+public class VoteServer extends VoterGrpc.VoterImplBase implements Watcher {
     private static final Logger LOG = LoggerFactory.getLogger(VoteServer.class);
     private static ZooKeeper zooKeeper;
     private static String root = "/Election";
+
+    // gRPC:
+    private Server grpcVoteServer;
 
     //votes - Map from the voter to the candidate id
     private HashMap<String, Integer> votes = new HashMap<>();
@@ -26,36 +37,51 @@ public class VoteServer implements Watcher {
     //the state number of the server
     private int stateNumber;
     private String serverPath;
+    private String statePath;
 
-    private VoteServer(String selfAddress, int stateNumber, int port, String zkHost) throws IOException {
+    private VoteServer(String selfAddress, int stateNumber, int grpcPort, String zkHost) throws IOException {
         //this.id = id;
         this.selfAddress = selfAddress;
         this.stateNumber = stateNumber;
+        this.statePath = root + "/" + stateNumber;
         zooKeeper = new ZooKeeper(zkHost, 3000, this);
-        // TODO: initialize gRPC port
+        initGrpcVoteServer(grpcPort);
         //TODO: init all canindates to count 0
         LOG.info("VoteServer of state " + stateNumber + " created!");
+    }
+
+    private void initGrpcVoteServer(int grpcPort) {
+        try {
+            grpcVoteServer = ServerBuilder.forPort(grpcPort)
+                    .addService(this)
+                    .build()
+                    .start();
+        } catch (IOException e) {
+            e.printStackTrace();
+            LOG.error("could not init grpc vote server");
+            System.exit(1);
+        }
     }
 
     private void propose() throws KeeperException, InterruptedException {
         if (zooKeeper.exists(root, true) == null) {
             zooKeeper.create(root, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
-        if (zooKeeper.exists(root + "/" + stateNumber, true) == null) {
-            zooKeeper.create(root + "/" + stateNumber, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        if (zooKeeper.exists(statePath, true) == null) {
+            zooKeeper.create(statePath, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
-        if (zooKeeper.exists(root + "/" + stateNumber + "/LiveNodes", true) == null) {
-            zooKeeper.create(root + "/" + stateNumber + "/LiveNodes", new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        if (zooKeeper.exists(statePath + "/LiveNodes", true) == null) {
+            zooKeeper.create(statePath + "/LiveNodes", new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
-        if (zooKeeper.exists(root + "/" + stateNumber + "/Commit", true) == null) {
-            zooKeeper.create(root + "/" + stateNumber + "/Commit", String.valueOf(0).getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        if (zooKeeper.exists(statePath + "/Commit", true) == null) {
+            zooKeeper.create(statePath + "/Commit", String.valueOf(0).getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         }
-        serverPath = zooKeeper.create(root + "/", selfAddress.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
+        serverPath = zooKeeper.create(statePath + "/LiveNodes", selfAddress.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL_SEQUENTIAL);
     }
 
     private void onNodeDataChanged(String nodeName) {
-        if (!nodeName.equals(root + "/" + stateNumber + "/Commit")) return;
+        if (!nodeName.equals(statePath + "/Commit")) return;
         LOG.info("Server: " + this.toString() + " commit NodeDataChanged");
         if (!(isPending.get() && lastVote != null)) return; //for safety
         LOG.info("Server: " + this.toString() + " isPending");
@@ -101,6 +127,11 @@ public class VoteServer implements Watcher {
                 ", stateNumber=" + stateNumber +
                 ", serverPath='" + serverPath + '\'' +
                 '}';
+    }
+
+    @Override
+    public void vote(VoterOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
+        super.vote(request, responseObserver);
     }
 
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
