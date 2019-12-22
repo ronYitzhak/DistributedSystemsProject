@@ -10,4 +10,5 @@ message VoteRequest {
 
 service Voter {
     rpc Vote (VoteRequest) returns (Void) {}
+    rpc MasterVote (VoteRequest) returns (Void) {}
 }

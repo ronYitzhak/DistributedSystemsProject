@@ -12,23 +12,26 @@ import protos.VoterGrpc;
 import protos.VoterOuterClass;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     private static final Logger LOG = LoggerFactory.getLogger(VoteImpl.class);
     private static ZooKeeper zooKeeper;
     private static String root = "/Election";
+    private static String startPath = "/Election/Start";
 
     private HashMap<String, String> votes = new HashMap<>(); // clientName -> candidateName
     private HashMap<String, Integer> votesCount = new HashMap<>(); // candidateName -> total votes count
     private Pair<String, String> lastVote = null; // vote pending to be committed (clientName -> candidateName)
     private AtomicBoolean isPending = new AtomicBoolean(false);
+    private boolean isActive = false;
     private String selfAddress; // the gRPC address of the server
     private String state;
     private String serverPath;
     private String statePath;
+    private String masterPath;
+    private List<VoteClient> slaves = new ArrayList<>();
 
     // gRPC:
     private Server grpcVoteServer;
@@ -66,16 +69,22 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         createIfNotExists(statePath + "/Commit", CreateMode.PERSISTENT);
         serverPath = zooKeeper.create(statePath + "/LiveNodes/", selfAddress.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE,
                 CreateMode.EPHEMERAL_SEQUENTIAL);
+        //define watchers
+        zooKeeper.exists(startPath, true);
+        zooKeeper.getChildren(statePath + "/LiveNodes",true);
     }
 
     private void createIfNotExists(String path, CreateMode createMode) throws KeeperException, InterruptedException {
-        if (zooKeeper.exists(path, true) == null) {
-            zooKeeper.create(path, new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
+        if (zooKeeper.exists(path, false) == null) {
+            if (path.equals(statePath + "/Commit"))
+                zooKeeper.create(path, new byte[]{0}, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
+            else
+                zooKeeper.create(path, new byte[]{}, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
         }
     }
 
-    private void onNodeDataChanged(String nodeName) {
-        if (!nodeName.equals(statePath + "/Commit")) return;
+    private void onNodeDataChanged(String nodePath){
+        if (!nodePath.equals(statePath + "/Commit")) return;
         LOG.info("Server: " + this.toString() + " commit NodeDataChanged");
         if (!(isPending.get() && lastVote != null)) return; //for safety
         LOG.info("Server: " + this.toString() + " isPending");
@@ -95,19 +104,108 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         isPending.set(false);
     }
 
+    private void getMaster() {
+        List<String> nodes;
+        try {
+            nodes = zooKeeper.getChildren(statePath + "/LiveNodes", true);
+        } catch (KeeperException e) {
+            e.printStackTrace();
+            LOG.error("KeeperException - should not get here");
+            return;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            LOG.error("InterruptedException - should not get here");
+            return;
+        }
+        Collections.sort(nodes);
+        masterPath = statePath + "/LiveNodes/" + nodes.get(0);
+        LOG.info("Server: " + this.toString() + " chose master: " + masterPath);
+        //define watchers
+        try {
+            if(zooKeeper.exists(masterPath, true) == null) getMaster();
+        } catch (KeeperException e) {
+            e.printStackTrace();
+            LOG.error("KeeperException - should not get here");
+            return;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            LOG.error("InterruptedException - should not get here");
+            return;
+        }
+    }
+
+    private void configureMaster(){
+        LOG.info("Server: " + this.toString() + " is the state master");
+        slaves = new ArrayList<>();
+        List<String> nodes;
+        try {
+            nodes = zooKeeper.getChildren(statePath+"/LiveNodes", true);
+        } catch (KeeperException e) {
+            e.printStackTrace();
+            LOG.error("KeeperException - should not get here");
+            return;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            LOG.error("InterruptedException - should not get here");
+            return;
+        }
+        String host= null;
+        for(String node: nodes){
+            try {
+                host = new String(zooKeeper.getData(statePath + "/LiveNodes/"+node,false,null));
+                slaves.add(new VoteClient(host));
+            } catch (KeeperException e) {
+                e.printStackTrace();
+                LOG.error("KeeperException - should not get here");
+                return;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                LOG.error("InterruptedException - should not get here");
+                return;
+            }
+        }
+    }
+
+    private void onNodeCreated(String nodePath) {
+        if (!nodePath.equals(startPath)) return;
+        LOG.info("Server: " + this.toString() + " start NodeCreated");
+        votes = new HashMap<>();
+        votesCount = new HashMap<>();
+        lastVote = null;
+        isPending = new AtomicBoolean(false);
+        slaves = new ArrayList<>();
+        isActive = true;
+        getMaster();
+        if(masterPath.equals(serverPath)) configureMaster();
+    }
+
+    private void onNodeDeleted(String nodePath) {
+        if (!nodePath.equals(masterPath)) return;
+        LOG.info("Server: " + this.toString() + " master NodeDeleted");
+        //TODO: lock when getting master?
+        //lastVote = null;
+        isPending.set(false);
+        getMaster();
+        if(masterPath.equals(serverPath)) configureMaster();
+    }
+
     @Override
     public void process(WatchedEvent watchedEvent) {
-        var nodeName = watchedEvent.getState().name();
+        var nodePath = watchedEvent.getPath();
         LOG.info("Server: " + this.toString() + " got event: " + watchedEvent.getType().toString());
         switch (watchedEvent.getType()) {
             case NodeDataChanged:
-                onNodeDataChanged(nodeName);
+                onNodeDataChanged(nodePath);
+                break;
+            case NodeCreated:
+                onNodeCreated(nodePath);
                 break;
             case NodeDeleted:
+                onNodeDeleted(nodePath);
+                break;
             case NodeChildrenChanged:
             case ChildWatchRemoved:
             case DataWatchRemoved:
-            case NodeCreated:
             case None:
                 break;
         }
@@ -124,26 +222,71 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
 
     @Override
     public void vote(VoterOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
-        var startPath = root + "/Start";
         AdminOuterClass.Void rep = AdminOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
+        if (!isActive) {
+            LOG.warn("Application not started");
+            responseObserver.onCompleted();
+            return;
+        }
+        while (isPending.compareAndExchange(false, true)) ;
         try {
-            if (zooKeeper.exists(startPath, true) == null) {
-                LOG.warn("Application not started");
-                responseObserver.onCompleted();
-                return;
-            }
+            zooKeeper.exists(statePath + "/Commit", true);
         } catch (KeeperException e) {
             e.printStackTrace();
             LOG.error("KeeperException - should not get here");
+            responseObserver.onCompleted();
+            return;
         } catch (InterruptedException e) {
             e.printStackTrace();
             LOG.error("InterruptedException - should not get here");
+            responseObserver.onCompleted();
+            return;
         }
-        while (isPending.compareAndExchange(false, true));
         lastVote = new Pair<>(request.getVoterName(), request.getCandidateName());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void masterVote(VoterOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
+        AdminOuterClass.Void rep = AdminOuterClass.Void
+                .newBuilder()
+                .build();
+        responseObserver.onNext(rep);
+        if (!isActive) {
+            LOG.warn("Application not started");
+            responseObserver.onCompleted();
+            return;
+        }
+        if (!masterPath.equals(serverPath)) {
+            LOG.warn("Not a Master");
+            responseObserver.onCompleted();
+            return;
+        }
+        if (!request.getState().equals(state)) {
+            LOG.warn("Not the Master's state");
+            responseObserver.onCompleted();
+            return;
+        }
+
+        synchronized (this) {
+            for (VoteClient slave : slaves) {
+                slave.vote(request.getVoterName(), request.getCandidateName(), request.getState());
+            }
+            try {
+                byte[] data = zooKeeper.getData(statePath + "/Commit", true, null);
+                data[0]++;
+                zooKeeper.setData(statePath + "/Commit", data, -1);
+            } catch (KeeperException e) {
+                e.printStackTrace();
+                LOG.error("KeeperException - should not get here");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                LOG.error("InterruptedException - should not get here");
+            }
+        }
         responseObserver.onCompleted();
     }
 
@@ -151,7 +294,12 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         org.apache.log4j.BasicConfigurator.configure();
 
         //TODO: get parameter for builder from user\commandline\somehow
-        var voteServer = new VoteImpl("127.0.0.1:50051", "california", 50051, "127.0.0.1:2181");
+        Scanner input = new Scanner(System.in);
+        System.out.print("gRPC self ip: ");
+        String host = input.nextLine();
+        System.out.print("gRPC port: ");
+        int grpcPort = input.nextInt();
+        var voteServer = new VoteImpl(host+":"+grpcPort, "California", grpcPort, "127.0.0.1:2181");
         voteServer.propose();
         System.out.println("Hello");
         while (true) {}

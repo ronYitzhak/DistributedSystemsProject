@@ -4,13 +4,11 @@ import org.apache.zookeeper.server.quorum.Vote;
 import protos.VoterGrpc;
 import protos.VoterOuterClass;
 
-import java.util.Iterator;
-
-public class VoteClientTest {
+public class VoteClient {
     private VoterGrpc.VoterBlockingStub stub;
     private ManagedChannel channel;
 
-    public VoteClientTest(String host) {
+    public VoteClient(String host) {
         channel = ManagedChannelBuilder
                 .forTarget(host)
                 .usePlaintext()
@@ -28,15 +26,6 @@ public class VoteClientTest {
                 .setCandidateName(candidateName)
                 .setState(state)
                 .build();
-        stub.masterVote(v);
+        stub.vote(v);
     }
-
-    public static void main(String[] args) throws Exception {
-        org.apache.log4j.BasicConfigurator.configure();
-        var galsIp = "192.168.43.247";
-        VoteClientTest client = new VoteClientTest("127.0.0.1:55555");
-        client.vote("gal", "0", "California");
-        client.shutdown();
-    }
-
 }
