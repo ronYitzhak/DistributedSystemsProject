@@ -8,12 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.annotation.ComponentScan;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Scanner;
 
 @SpringBootApplication
+@ComponentScan("RestClient.Controllers")
 public class Election {
     private static final Logger LOG = LoggerFactory.getLogger(VoteImpl.class);
 
@@ -25,7 +27,7 @@ public class Election {
         HashMap<String, Object> props = new HashMap<>();
         props.put("server.port", restPort);
         new SpringApplicationBuilder()
-                .sources(VotesController.class)
+                .sources(Election.class)
                 .properties(props)
                 .run();
 
