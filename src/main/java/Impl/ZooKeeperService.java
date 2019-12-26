@@ -166,6 +166,20 @@ public class ZooKeeperService {
         }
     }
 
+    public static String getData(String path, Boolean watch) {
+        try {
+            return new String(zooKeeper.getData(path, watch, null));
+        } catch (KeeperException e) {
+            LOG.error("KeeperException - should not get here");
+            e.printStackTrace();
+            return null;
+        } catch (InterruptedException e) {
+            LOG.error("InterruptedException - should not get here");
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public static Integer getChildrenCount(String path, Boolean watch) { // path of live nodes
         try {
             var nodes = zooKeeper.getChildren(path, watch);

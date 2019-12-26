@@ -39,6 +39,9 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     private String globalMasterPath;
     private List<ElectionsClient> slaves = new ArrayList<>();
     private List<ElectionsClient> globalSlaves = new ArrayList<>();
+    private ElectionsClient master;
+    private ElectionsClient globalMaster;
+
 
 
     // gRPC:
@@ -77,8 +80,9 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         ZooKeeperService.createNodeIfNotExists(statePath + "/Commit", CreateMode.PERSISTENT, new byte[]{0});
         serverPath = ZooKeeperService.createSeqNode(statePath + "/LiveNodes/", CreateMode.EPHEMERAL_SEQUENTIAL, selfAddress.getBytes());
         globalServerPath = ZooKeeperService.createSeqNode(globalPath + "/LiveNodes/", CreateMode.EPHEMERAL_SEQUENTIAL, selfAddress.getBytes());
-        globalMasterPath = ZooKeeperService.getGlobalMaster(true);
+        globalMasterPath = ZooKeeperService.getGlobalMaster(false);
         if(globalMasterPath.equals(globalServerPath)) configureGlobalMaster();
+        else connectGlobalMaster();
     }
 
     private void onNodeDataChanged(String nodePath){
@@ -113,6 +117,15 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         }
     }
 
+    private void connectGlobalMaster() {
+        LOG.info("Server: " + this.toString() + " is connecting to global master");
+        String host = ZooKeeperService.getData(globalMasterPath, true);
+        if (host == null) {
+            onGlobalMasterDelete();
+        }
+        globalMaster = new ElectionsClient(host);
+    }
+
     private void configureMaster(){
         LOG.info("Server: " + this.toString() + " is the state master");
         slaves = new ArrayList<>();
@@ -122,6 +135,15 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 slaves.add(new ElectionsClient(host));
             }
         }
+    }
+
+    private void connectMaster() {
+        LOG.info("Server: " + this.toString() + " is connecting to master");
+        String host = ZooKeeperService.getData(masterPath, true);
+        if (host == null) {
+            onMasterDelete();
+        }
+        master = new ElectionsClient(host);
     }
 
     private void onStart() {
@@ -135,6 +157,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         masterPath = ZooKeeperService.getMasterByState(state, true);
         LOG.info("Server: " + this.toString() + " chose master: " + masterPath);
         if(masterPath.equals(serverPath)) configureMaster();
+        else connectMaster();
     }
 
     private void onStop() {
@@ -152,9 +175,10 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         //TODO: lock when getting master?
         //lastVote = null;
         isPending.set(false);
-        masterPath = ZooKeeperService.getMasterByState(state, true);
+        masterPath = ZooKeeperService.getMasterByState(state, false);
         LOG.info("Server: " + this.toString() + " chose master: " + masterPath);
         if(masterPath.equals(serverPath)) configureMaster();
+        else connectMaster();
     }
 
     private void onGlobalMasterDelete() {
@@ -162,9 +186,10 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         //TODO: lock when getting master?
         //lastVote = null;
         isPending.set(false);
-        globalMasterPath = ZooKeeperService.getGlobalMaster(true);
+        globalMasterPath = ZooKeeperService.getGlobalMaster(false);
         LOG.info("Server: " + this.toString() + " chose global master: " + globalMasterPath);
         if(globalMasterPath.equals(globalServerPath)) configureGlobalMaster();
+        else connectGlobalMaster();
     }
 
 
@@ -174,17 +199,17 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 if (globalSlaves.size() >= ZooKeeperService.getChildrenCount(globalPath + "/LiveNodes", false))
                     return;
                 configureGlobalMaster();
-            } else if(!ZooKeeperService.exists(globalMasterPath, true)){
+            }/* else if(!ZooKeeperService.exists(globalMasterPath, true)){
                 onGlobalMasterDelete();
-            }
+            }*/
         }
-        if (nodePath.equals(statePath + "/LiveNodes")) {
+        /*if (nodePath.equals(statePath + "/LiveNodes")) {
             if (serverPath.equals(masterPath)) {
                     return;
             } else if(!ZooKeeperService.exists(masterPath, true)){
                 onMasterDelete();
             }
-        }
+        }*/
     }
 
     @Override
@@ -265,21 +290,20 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
             responseObserver.onCompleted();
             return;
         }
-        if (!masterPath.equals(serverPath)) {
-            LOG.warn("Not a Master");
-            responseObserver.onCompleted();
-            return;
-        }
         if (!request.getState().equals(state)) {
-            LOG.warn("Not the Master's state");
+            LOG.warn("Not the server state");
             responseObserver.onCompleted();
             return;
         }
-        synchronized (lockVote) {
-            for (ElectionsClient slave : slaves) {
-                slave.vote(request.getVoterName(), request.getCandidateName(), request.getState());
+        if (!masterPath.equals(serverPath)) {
+            master.broadcastVote(request.getVoterName(), request.getCandidateName(), request.getState());
+        } else {
+            synchronized (lockVote) {
+                for (ElectionsClient slave : slaves) {
+                    slave.vote(request.getVoterName(), request.getCandidateName(), request.getState());
+                }
+                ZooKeeperService.incDataByOne(statePath + "/Commit");
             }
-            ZooKeeperService.incDataByOne(statePath + "/Commit");
         }
         responseObserver.onCompleted();
     }
@@ -291,14 +315,13 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 .build();
         responseObserver.onNext(rep);
         if (!globalMasterPath.equals(globalServerPath)) {
-            LOG.warn("Not a Global Master");
-            responseObserver.onCompleted();
-            return;
-        }
-        //TODO: start on start?
-        synchronized (lockStartStop) {
-            for (ElectionsClient slave : globalSlaves) {
-                slave.start();
+            globalMaster.broadcastStart();
+        } else {
+            //TODO: start on start?
+            synchronized (lockStartStop) {
+                for (ElectionsClient slave : globalSlaves) {
+                    slave.start();
+                }
             }
         }
         responseObserver.onCompleted();
@@ -311,13 +334,12 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 .build();
         responseObserver.onNext(rep);
         if (!globalMasterPath.equals(globalServerPath)) {
-            LOG.warn("Not a Global Master");
-            responseObserver.onCompleted();
-            return;
-        }
-        synchronized (lockStartStop) {
-            for (ElectionsClient slave : globalSlaves) {
-                slave.stop();
+            globalMaster.broadcastStop();
+        } else {
+            synchronized (lockStartStop) {
+                for (ElectionsClient slave : globalSlaves) {
+                    slave.stop();
+                }
             }
         }
         responseObserver.onCompleted();

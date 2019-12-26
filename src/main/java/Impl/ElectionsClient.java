@@ -43,4 +43,25 @@ public class ElectionsClient {
                 .build();
         stub.stop(v);
     }
+
+    public void broadcastVote(String voterName, String candidateName, String state) {
+        ElectionsServerOuterClass.VoteRequest v = ElectionsServerOuterClass.VoteRequest.newBuilder()
+                .setVoterName(voterName)
+                .setCandidateName(candidateName)
+                .setState(state)
+                .build();
+        stub.broadcastVote(v);
+    }
+
+    public void broadcastStart() {
+        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+                .build();
+        stub.broadcastStart(v);
+    }
+
+    public void broadcastStop() {
+        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+                .build();
+        stub.broadcastStop(v);
+    }
 }
