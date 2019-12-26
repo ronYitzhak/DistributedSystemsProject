@@ -14,11 +14,13 @@ import java.util.HashMap;
 
 /*
 * TODOs:
-* 1. impl committee client - start, stop, status
-*       What happens with "start on start?", "global master fall on start?".
-* 2. submit candidates + servers lists (REST or gRPC) by committee
-* 3. implement REST - vote function
-* 4 TESTING
+* 1. impl committeeServer - start(GAL), stop(GAL), status (RON)
+*       What happens with "start on start?" nothing,
+*       "global master fall on start?" start adminRPC will call next global master.
+* 2. submit candidates + servers lists (REST or gRPC) by committee (RON if Dolev answers)
+* 3. implement REST - vote function - to fix with server send broadcast (GAL)
+* 4. TESTING - docker (RON)
+* 5. change admin name to committeeServer
 * */
 
 @SpringBootApplication
