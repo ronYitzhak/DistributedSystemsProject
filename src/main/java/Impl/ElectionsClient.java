@@ -3,6 +3,7 @@ package Impl;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.zookeeper.server.quorum.Vote;
+import protos.AdminOuterClass;
 import protos.ElectionsServerGrpc;
 import protos.ElectionsServerOuterClass;
 
@@ -29,5 +30,17 @@ public class ElectionsClient {
                 .setState(state)
                 .build();
         stub.vote(v);
+    }
+
+    public void start() {
+        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+                .build();
+        stub.start(v);
+    }
+
+    public void stop() {
+        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+                .build();
+        stub.stop(v);
     }
 }

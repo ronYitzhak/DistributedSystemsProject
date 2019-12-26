@@ -17,6 +17,7 @@ import java.util.Scanner;
 /*
 * TODOs:
 * 1. impl committee client - start, stop, status
+*       What happens with "start on start?", "global master fall on start?".
 * 2. submit candidates + servers lists (REST or gRPC) by committee
 * 3. implement REST - vote function
 * 4 TESTING
@@ -50,11 +51,11 @@ public class Election {
 
         try {
             ElectionsServerImpl electionsServer = new ElectionsServerImpl(host+":"+grpcPort, "California", grpcPort);
-            LOG.info("VoteImpl initialized on host: " + host + " and port: " + grpcPort);
+            LOG.info("ElectionsServerImpl initialized on host: " + host + " and port: " + grpcPort);
             ZooKeeperService.init(zkHost, electionsServer);
             LOG.info("ZooKeeperService initialized on host: " + zkHost);
             electionsServer.propose();
-            LOG.info("VoteImpl proposed on host: " + host + " and port: " + grpcPort);
+            LOG.info("ElectionsServerImpl proposed on host: " + host + " and port: " + grpcPort);
             System.out.println("Hello");
             while (true) {}
         } catch (IOException e) {

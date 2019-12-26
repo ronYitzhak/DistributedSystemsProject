@@ -2,6 +2,7 @@ package Impl;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import protos.AdminOuterClass;
 import protos.ElectionsServerGrpc;
 import protos.ElectionsServerOuterClass;
 
@@ -30,11 +31,18 @@ public class VoteClientTest {
         stub.broadcastVote(v);
     }
 
+    public void start() {
+        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+                .build();
+        stub.broadcastStart(v);
+    }
+
     public static void main(String[] args) {
 //        org.apache.log4j.BasicConfigurator.configure();
         var galsIp = "192.168.43.247";
         VoteClientTest client = new VoteClientTest("127.0.0.1:55555");
-        client.vote("gal", "0", "California");
+        client.start();
+        //client.vote("gal", "0", "California");
         client.shutdown();
     }
 

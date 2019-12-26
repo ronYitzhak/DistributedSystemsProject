@@ -52,6 +52,20 @@ public class ZooKeeperService {
         }
     }
 
+    public static Boolean exists(String path, Boolean watch) {
+        try {
+            return zooKeeper.exists(path, watch) != null;
+        } catch (KeeperException e) {
+            LOG.error("KeeperException - should not get here");
+            e.printStackTrace();
+            return false;
+        } catch (InterruptedException e) {
+            LOG.error("InterruptedException - should not get here");
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public static void setWatcherOnNode(String path) {
         try {
             zooKeeper.exists(path, true);
@@ -76,11 +90,11 @@ public class ZooKeeperService {
         }
     }
 
-    public static String getMasterByState(String state) {
+    public static String getMasterByState(String state, Boolean watch) {
         List<String> nodes;
         var statePath = "/Application.Election/" + state;
         try {
-            nodes = zooKeeper.getChildren(statePath + "/LiveNodes", true);
+            nodes = zooKeeper.getChildren(statePath + "/LiveNodes", watch);
             Collections.sort(nodes);
             return statePath + "/LiveNodes/" + nodes.get(0); // master path
         } catch (KeeperException e) {
@@ -106,9 +120,27 @@ public class ZooKeeperService {
 //        }
     }
 
-    public static ArrayList<String> getChildrenData(String path) { // path of live nodes
+    public static String getGlobalMaster(Boolean watch) {
+        List<String> nodes;
+        var globalPath = "/Application.Election/Global";
         try {
-            var nodes = zooKeeper.getChildren(path, false);
+            nodes = zooKeeper.getChildren(globalPath + "/LiveNodes", watch);
+            Collections.sort(nodes);
+            return globalPath + "/LiveNodes/" + nodes.get(0); // master path
+        } catch (KeeperException e) {
+            e.printStackTrace();
+            LOG.error("KeeperException - should not get here");
+            return "";
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            LOG.error("InterruptedException - should not get here");
+            return "";
+        }
+    }
+
+    public static ArrayList<String> getChildrenData(String path, Boolean watch) { // path of live nodes
+        try {
+            var nodes = zooKeeper.getChildren(path, watch);
             ArrayList<String> result = new ArrayList<>();
             nodes.forEach(node -> {
                 try {
@@ -131,6 +163,21 @@ public class ZooKeeperService {
             LOG.error("InterruptedException - should not get here");
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public static Integer getChildrenCount(String path, Boolean watch) { // path of live nodes
+        try {
+            var nodes = zooKeeper.getChildren(path, watch);
+            return nodes.size();
+        } catch (KeeperException e) {
+            LOG.error("KeeperException - should not get here");
+            e.printStackTrace();
+            return 0;
+        } catch (InterruptedException e) {
+            LOG.error("InterruptedException - should not get here");
+            e.printStackTrace();
+            return 0;
         }
     }
 
