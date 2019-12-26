@@ -1,6 +1,6 @@
 package Application;
 
-import Impl.VoteImpl;
+import Impl.ElectionsServerImpl;
 import Impl.ZooKeeperService;
 import RestClient.Controllers.VotesController;
 import org.apache.zookeeper.KeeperException;
@@ -25,7 +25,7 @@ import java.util.Scanner;
 @SpringBootApplication
 @ComponentScan("RestClient.Controllers")
 public class Election {
-    private static final Logger LOG = LoggerFactory.getLogger(VoteImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ElectionsServerImpl.class);
 
     public static void main(String[] args) {
 //        org.apache.log4j.BasicConfigurator.configure();
@@ -49,11 +49,11 @@ public class Election {
         String zkHost = "127.0.0.1:2181";
 
         try {
-            VoteImpl voteServer = new VoteImpl(host+":"+grpcPort, "California", grpcPort);
+            ElectionsServerImpl electionsServer = new ElectionsServerImpl(host+":"+grpcPort, "California", grpcPort);
             LOG.info("VoteImpl initialized on host: " + host + " and port: " + grpcPort);
-            ZooKeeperService.init(zkHost, voteServer);
+            ZooKeeperService.init(zkHost, electionsServer);
             LOG.info("ZooKeeperService initialized on host: " + zkHost);
-            voteServer.propose();
+            electionsServer.propose();
             LOG.info("VoteImpl proposed on host: " + host + " and port: " + grpcPort);
             System.out.println("Hello");
             while (true) {}

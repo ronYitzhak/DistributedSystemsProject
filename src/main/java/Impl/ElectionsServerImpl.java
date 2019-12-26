@@ -10,16 +10,16 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
 import protos.AdminOuterClass;
-import protos.VoterGrpc;
-import protos.VoterOuterClass;
+import protos.ElectionsServerGrpc;
+import protos.ElectionsServerOuterClass;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
-    private static final Logger LOG = LoggerFactory.getLogger(VoteImpl.class);
+public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImplBase implements Watcher {
+    private static final Logger LOG = LoggerFactory.getLogger(ElectionsServerImpl.class);
     private static String root = "/Application.Election";
     private static String startPath = "/Application.Election/Start";
 
@@ -33,12 +33,12 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     private String serverPath;
     private String statePath;
     private String masterPath;
-    private List<VoteClient> slaves = new ArrayList<>();
+    private List<ElectionsClient> slaves = new ArrayList<>();
 
     // gRPC:
     private Server grpcVoteServer;
 
-    public VoteImpl(String selfAddress, String state, int grpcPort) throws IOException {
+    public ElectionsServerImpl(String selfAddress, String state, int grpcPort) throws IOException {
         this.selfAddress = selfAddress;
         this.state = state;
         this.statePath = root + "/" + state;
@@ -99,7 +99,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         slaves = new ArrayList<>();
         var hosts = ZooKeeperService.getChildrenData(statePath+"/LiveNodes");
         for(String host: hosts){
-                slaves.add(new VoteClient(host));
+                slaves.add(new ElectionsClient(host));
         }
     }
 
@@ -160,7 +160,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     }
 
     @Override
-    public void vote(VoterOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
+    public void vote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
         AdminOuterClass.Void rep = AdminOuterClass.Void
                 .newBuilder()
                 .build();
@@ -177,7 +177,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     }
 
     @Override
-    public void masterVote(VoterOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
+    public void broadcastVote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
         AdminOuterClass.Void rep = AdminOuterClass.Void
                 .newBuilder()
                 .build();
@@ -198,7 +198,7 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
             return;
         }
         synchronized (this) {
-            for (VoteClient slave : slaves) {
+            for (ElectionsClient slave : slaves) {
                 slave.vote(request.getVoterName(), request.getCandidateName(), request.getState());
             }
             ZooKeeperService.incDataByOne(statePath + "/Commit");
@@ -214,8 +214,8 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
         String host = input.nextLine();
         System.out.print("gRPC port: ");
         int grpcPort = input.nextInt();
-        var voteServer = new VoteImpl(host+":"+grpcPort, "California", grpcPort); // zkHost: "127.0.0.1:2181"
-        voteServer.propose();
+        var electionsServer = new ElectionsServerImpl(host+":"+grpcPort, "California", grpcPort); // zkHost: "127.0.0.1:2181"
+        electionsServer.propose();
         System.out.println("Hello");
         while (true) {}
     }

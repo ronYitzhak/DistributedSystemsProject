@@ -3,19 +3,19 @@ package Impl;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.zookeeper.server.quorum.Vote;
-import protos.VoterGrpc;
-import protos.VoterOuterClass;
+import protos.ElectionsServerGrpc;
+import protos.ElectionsServerOuterClass;
 
-public class VoteClient {
-    private VoterGrpc.VoterBlockingStub stub;
+public class ElectionsClient {
+    private ElectionsServerGrpc.ElectionsServerBlockingStub stub;
     private ManagedChannel channel;
 
-    public VoteClient(String host) {
+    public ElectionsClient(String host) {
         channel = ManagedChannelBuilder
                 .forTarget(host)
                 .usePlaintext()
                 .build();
-        stub = VoterGrpc.newBlockingStub(channel);
+        stub = ElectionsServerGrpc.newBlockingStub(channel);
     }
 
     public void shutdown() {
@@ -23,7 +23,7 @@ public class VoteClient {
     }
 
     public void vote(String voterName, String candidateName, String state) {
-        VoterOuterClass.VoteRequest v = VoterOuterClass.VoteRequest.newBuilder()
+        ElectionsServerOuterClass.VoteRequest v = ElectionsServerOuterClass.VoteRequest.newBuilder()
                 .setVoterName(voterName)
                 .setCandidateName(candidateName)
                 .setState(state)

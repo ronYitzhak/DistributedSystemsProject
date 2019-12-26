@@ -2,11 +2,11 @@ package Impl;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import protos.VoterGrpc;
-import protos.VoterOuterClass;
+import protos.ElectionsServerGrpc;
+import protos.ElectionsServerOuterClass;
 
 public class VoteClientTest {
-    private VoterGrpc.VoterBlockingStub stub;
+    private ElectionsServerGrpc.ElectionsServerBlockingStub stub;
     private ManagedChannel channel;
 
     public VoteClientTest(String host) {
@@ -14,7 +14,7 @@ public class VoteClientTest {
                 .forTarget(host)
                 .usePlaintext()
                 .build();
-        stub = VoterGrpc.newBlockingStub(channel);
+        stub = ElectionsServerGrpc.newBlockingStub(channel);
     }
 
     public void shutdown() {
@@ -22,12 +22,12 @@ public class VoteClientTest {
     }
 
     public void vote(String voterName, String candidateName, String state) {
-        VoterOuterClass.VoteRequest v = VoterOuterClass.VoteRequest.newBuilder()
+        ElectionsServerOuterClass.VoteRequest v = ElectionsServerOuterClass.VoteRequest.newBuilder()
                 .setVoterName(voterName)
                 .setCandidateName(candidateName)
                 .setState(state)
                 .build();
-        stub.masterVote(v);
+        stub.broadcastVote(v);
     }
 
     public static void main(String[] args) {
