@@ -16,6 +16,11 @@ public class AdminImpl extends AdminGrpc.AdminImplBase {
         super.stop(request, responseObserver);
     }
 
+    /**
+     * get status from specific state
+     * @param request StateStatusRequest
+     * @param responseObserver StateStatusResponse
+     */
     @Override
     public void getStatus(AdminOuterClass.StateStatusRequest request, StreamObserver<AdminOuterClass.StateStatusResponse> responseObserver) {
         super.getStatus(request, responseObserver);

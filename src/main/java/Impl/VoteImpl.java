@@ -15,6 +15,7 @@ import protos.VoterOuterClass;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
@@ -22,8 +23,8 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     private static String root = "/Application.Election";
     private static String startPath = "/Application.Election/Start";
 
-    private HashMap<String, String> votes = new HashMap<>(); // clientName -> candidateName
-    private HashMap<String, Integer> votesCount = new HashMap<>(); // candidateName -> total votes count
+    private ConcurrentHashMap<String, String> votes = new ConcurrentHashMap<>(); // clientName -> candidateName
+    private ConcurrentHashMap<String, Integer> votesCount = new ConcurrentHashMap<>(); // candidateName -> total votes count
     private Pair<String, String> lastVote = null; // vote pending to be committed (clientName -> candidateName)
     private AtomicBoolean isPending = new AtomicBoolean(false);
     private boolean isActive = false;
@@ -105,8 +106,8 @@ public class VoteImpl extends VoterGrpc.VoterImplBase implements Watcher {
     private void onNodeCreated(String nodePath) {
         if (!nodePath.equals(startPath)) return;
         LOG.info("Server: " + this.toString() + " start NodeCreated");
-        votes = new HashMap<>();
-        votesCount = new HashMap<>();
+        votes = new ConcurrentHashMap<>();
+        votesCount = new ConcurrentHashMap<>();
         lastVote = null;
         isPending = new AtomicBoolean(false);
         slaves = new ArrayList<>();

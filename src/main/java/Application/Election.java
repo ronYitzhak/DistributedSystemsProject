@@ -14,6 +14,14 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Scanner;
 
+/*
+* TODOs:
+* 1. impl committee client - start, stop, status
+* 2. submit candidates + servers lists (REST or gRPC) by committee
+* 3. implement REST - vote function
+* 4 TESTING
+* */
+
 @SpringBootApplication
 @ComponentScan("RestClient.Controllers")
 public class Election {
