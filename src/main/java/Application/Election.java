@@ -1,8 +1,8 @@
 package Application;
 
+import Impl.ElectionServerFactory;
 import Impl.ElectionsServerImpl;
 import Impl.ZooKeeperService;
-import RestClient.Controllers.VotesController;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,9 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.ComponentScan;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Scanner;
 
 /*
 * TODOs:
@@ -24,7 +22,7 @@ import java.util.Scanner;
 * */
 
 @SpringBootApplication
-@ComponentScan("RestClient.Controllers")
+@ComponentScan("Application.RestClient.Controllers")
 public class Election {
     private static final Logger LOG = LoggerFactory.getLogger(ElectionsServerImpl.class);
 
@@ -32,16 +30,27 @@ public class Election {
 //        org.apache.log4j.BasicConfigurator.configure();
         //TODO: get parameter for builder from user\commandline\somehow
 
-        int restPort = 9999;
-        HashMap<String, Object> props = new HashMap<>();
-        props.put("server.port", restPort);
-        new SpringApplicationBuilder()
-                .sources(Election.class)
-                .properties(props)
-                .run();
+        try {
+            String host = "127.0.0.1";
+            int grpcPort = 55550;
+            String state = "california";
 
-        LOG.info("rest initialized on port " + restPort);
+            var electionsServer = ElectionServerFactory.initElectionServer(host+":"+grpcPort, state, grpcPort);
+            String zkHost = "127.0.0.1:2181";
+            ZooKeeperService.init(zkHost, electionsServer);
+            electionsServer.propose();
+            System.out.println("Hello");
 
+            int restPort = 9999;
+            HashMap<String, Object> props = new HashMap<>();
+            props.put("server.port", restPort);
+            new SpringApplicationBuilder()
+                    .sources(Election.class)
+                    .properties(props)
+                    .run();
+
+            LOG.info("rest initialized on port " + restPort);
+/*
         Scanner input = new Scanner(System.in);
         System.out.print("gRPC self ip: ");
         String host = input.nextLine();
@@ -57,10 +66,8 @@ public class Election {
             electionsServer.propose();
             LOG.info("ElectionsServerImpl proposed on host: " + host + " and port: " + grpcPort);
             System.out.println("Hello");
+ */
             while (true) {}
-        } catch (IOException e) {
-            LOG.info("IOException - should not get here");
-            e.printStackTrace();
         } catch (InterruptedException e) {
             LOG.info("InterruptedException - should not get here");
             e.printStackTrace();

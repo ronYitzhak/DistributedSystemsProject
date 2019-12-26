@@ -1,4 +1,4 @@
-package RestClient.Models;
+package Application.RestClient.Models;
 
 import java.util.HashSet;
 

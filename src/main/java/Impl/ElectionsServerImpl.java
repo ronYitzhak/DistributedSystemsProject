@@ -47,7 +47,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     // gRPC:
     private Server grpcElectionServer;
 
-    public ElectionsServerImpl(String selfAddress, String state, int grpcPort) throws IOException {
+    public ElectionsServerImpl(String selfAddress, String state, int grpcPort) {
         this.selfAddress = selfAddress;
         this.state = state;
         this.statePath = root + "/" + state;

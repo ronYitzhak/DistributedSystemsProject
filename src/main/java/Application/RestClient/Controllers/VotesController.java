@@ -1,12 +1,12 @@
-package RestClient.Controllers;
+package Application.RestClient.Controllers;
 
-import RestClient.Models.State;
+import Impl.ElectionServerFactory;
+import Application.RestClient.Models.State;
+import Impl.ElectionsServerImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import protos.ElectionsServerOuterClass;
 
 import java.util.*;
 
@@ -26,7 +26,8 @@ class VoterNotFoundException extends RuntimeException {
 
 @RestController
 public class VotesController {
-    private static HashMap<String, HashSet<String>> stateToVoters = new HashMap<>(); // name -> state.  TODO: retrieve
+    private static HashMap<String, HashSet<String>> stateToVoters = new HashMap<>(); // state -> set of voters.  TODO: retrieve
+    private ElectionsServerImpl server = ElectionServerFactory.instance();
 
     VotesController() {
         // TEST Data
@@ -42,15 +43,25 @@ public class VotesController {
         return new HashSet<>();
     }
 
-    @GetMapping("/states/{stateName}/voters/{voterName}/vote")
-    ResponseEntity<Void> vote(@PathVariable String stateName, @PathVariable String voterName) {
+    @PostMapping("/states/{stateName}/voters/{voterName}/vote")
+    ResponseEntity<Void> vote(@PathVariable String stateName, @PathVariable String voterName, @RequestBody Map<String, Object> payload) {
+
         if (!stateToVoters.containsKey(stateName))
             throw new StateNotFoundException(stateName);
         var voters = stateToVoters.get(stateName);
         if (!voters.contains(voterName))
             throw new VoterNotFoundException(voterName);
-        // do voting
-
+        if (!payload.containsKey("candidate")) {
+            throw new VoterNotFoundException(voterName); // TODO: impl CandidateNotFoundException(); assume candidate is valid if exists
+        }
+        var candidate = payload.get("candidate").toString();
+        ElectionsServerOuterClass.VoteRequest voteRequest = ElectionsServerOuterClass.VoteRequest
+                .newBuilder()
+                .setCandidateName(candidate)
+                .setState(stateName)
+                .setVoterName(voterName)
+                .build();
+        server.broadcastVote(voteRequest, null);
         return new ResponseEntity<Void>(HttpStatus.OK);
     }
 }
