@@ -22,14 +22,13 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     private static final Logger LOG = LoggerFactory.getLogger(ElectionsServerImpl.class);
     private static String root = "/Application.Election";
     private static String globalPath = "/Application.Election/Global";
-
     private ConcurrentHashMap<String, String> votes = new ConcurrentHashMap<>(); // clientName -> candidateName
     private ConcurrentHashMap<String, Integer> votesCount = new ConcurrentHashMap<>(); // candidateName -> total votes count
     private Pair<String, String> lastVote = null; // vote pending to be committed (clientName -> candidateName)
     private AtomicBoolean isPending = new AtomicBoolean(false);
     private boolean isActive = false;
-    private Object lockStartStop = new Object();
-    private Object lockVote = new Object();
+    private final Object lockStartStop = new Object();
+    private final Object lockVote = new Object();
     private String selfAddress; // the gRPC address of the server
     private String state;
     private String serverPath;
@@ -41,24 +40,26 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     private List<ElectionsClient> globalSlaves = new ArrayList<>();
     private ElectionsClient master;
     private ElectionsClient globalMaster;
-
-
-
     // gRPC:
     private Server grpcElectionServer;
 
-    public ElectionsServerImpl(String selfAddress, String state, int grpcPort) {
+    /*** Global methods ***/
+
+    /*** START: Init methods ***/
+    public ElectionsServerImpl() {
+        LOG.info("ElectionServer created!");
+    }
+
+    public void init(String selfAddress, String state, int grpcPort) {
         this.selfAddress = selfAddress;
         this.state = state;
         this.statePath = root + "/" + state;
-        initGrpcVoteServer(grpcPort);
-        //TODO: init all canindates to count 0
-        HashSet<String> stateClients = CustomCSVParser.getClientsPerState(state);
-        HashSet<String> candidates = CustomCSVParser.getCandidates();
-        LOG.info("VoteServer of state " + state + " created!");
+        initGrpcElectionsServer(grpcPort);
+        initZKnodes();
+        LOG.info("ElectionsServer of state " + state + " init!");
     }
 
-    private void initGrpcVoteServer(int grpcPort) {
+    private void initGrpcElectionsServer(int grpcPort) {
         try {
             grpcElectionServer = ServerBuilder.forPort(grpcPort)
                     .addService(this)
@@ -71,7 +72,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         }
     }
 
-    public void propose() throws KeeperException, InterruptedException {
+    private void initZKnodes()  {
         ZooKeeperService.createNodeIfNotExists(root, CreateMode.PERSISTENT, new byte[]{});
         ZooKeeperService.createNodeIfNotExists(globalPath, CreateMode.PERSISTENT, new byte[]{});
         ZooKeeperService.createNodeIfNotExists(statePath, CreateMode.PERSISTENT, new byte[]{});
@@ -83,27 +84,6 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         globalMasterPath = ZooKeeperService.getGlobalMaster(false);
         if(globalMasterPath.equals(globalServerPath)) configureGlobalMaster();
         else connectGlobalMaster();
-    }
-
-    private void onNodeDataChanged(String nodePath){
-        if (!nodePath.equals(statePath + "/Commit")) return;
-        LOG.info("Server: " + this.toString() + " commit NodeDataChanged");
-        if (!(isPending.get() && lastVote != null)) return; //for safety
-        LOG.info("Server: " + this.toString() + " isPending");
-        String voterName = lastVote.getValue0();
-        String newVote = lastVote.getValue1();
-        if (votes.containsKey(voterName)) {
-            String oldVote = votes.get(voterName);
-            int oldCount = votesCount.get(oldVote);
-            votesCount.put(oldVote, oldCount - 1);
-            LOG.info("Server: " + this.toString() + " voterName: "+voterName +" oldVote: "+ oldVote);
-        }
-        votes.put(voterName, newVote);
-        int oldCount = votesCount.get(newVote);
-        votesCount.put(newVote, oldCount + 1);
-        LOG.info("Server: " + this.toString() + " voterName: "+voterName +" newVote: "+ newVote);
-        lastVote = null;
-        isPending.set(false);
     }
 
     private void configureGlobalMaster() {
@@ -145,11 +125,23 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         }
         master = new ElectionsClient(host);
     }
+    /*** END: Init methods ***/
 
+    /*** START: ElectionsServer methods ***/
     private void onStart() {
+        if(isActive) {
+            LOG.info("Server: " + this.toString() + "already started!");
+            return;
+        }
         LOG.info("Server: " + this.toString() + " started!");
         votes = new ConcurrentHashMap<>();
         votesCount = new ConcurrentHashMap<>();
+        //TODO: how to handle clients?
+        HashSet<String> stateClients = CustomCSVParser.getClientsPerState(state);
+        HashSet<String> candidates = CustomCSVParser.getCandidates();
+        for(String candidate: candidates) {
+            votesCount.put(candidate,0);
+        }
         lastVote = null;
         isPending = new AtomicBoolean(false);
         slaves = new ArrayList<>();
@@ -161,8 +153,68 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     private void onStop() {
-        LOG.info("Server: " + this.toString() + " stoped!");
+        if(!isActive) {
+            LOG.info("Server: " + this.toString() + "already stopped!");
+            return;
+        }
+        LOG.info("Server: " + this.toString() + " stopped!");
         isActive = false;
+    }
+
+    public void sendVote(String voterName, String candidateName, String state) {
+        if(this.state.equals(state)) {
+            broadcastVote(voterName, candidateName, state);
+        } else {
+            List<String> stateServers = ZooKeeperService.getChildrenData(root + state + "/LiveNodes", false);
+            Random rand = new Random();
+            String chosenHost = stateServers.get(rand.nextInt(stateServers.size()));
+            ElectionsClient chosenServer = new ElectionsClient(chosenHost);
+            chosenServer.broadcastVote(voterName,candidateName,state);
+        }
+    }
+
+    private void broadcastVote(String voterName, String candidateName, String state) {
+        if (!masterPath.equals(serverPath)) {
+            master.broadcastVote(voterName, candidateName, state);
+        } else {
+            synchronized (lockVote) {
+                for (ElectionsClient slave : slaves) {
+                    slave.vote(voterName, candidateName, state);
+                }
+                ZooKeeperService.incDataByOne(statePath + "/Commit");
+            }
+        }
+    }
+    @Override
+    public String toString() {
+        return "ElectionsServer{" +
+                "selfAddress='" + selfAddress + '\'' +
+                ", stateNumber=" + state +
+                ", serverPath='" + serverPath + '\'' +
+                '}';
+    }
+    /*** END: ElectionsServer methods ***/
+
+    /*** START: watcher methods ***/
+    private void onNodeDataChanged(String nodePath){
+        if (!nodePath.equals(statePath + "/Commit")) return;
+        LOG.info("Server: " + this.toString() + " commit NodeDataChanged");
+        if (!(isPending.get() && lastVote != null)) return; //for safety
+        LOG.info("Server: " + this.toString() + " isPending");
+        String voterName = lastVote.getValue0();
+        String newVote = lastVote.getValue1();
+        if (votes.containsKey(voterName)) {
+            String oldVote = votes.get(voterName);
+            int oldCount = votesCount.get(oldVote);
+            votesCount.put(oldVote, oldCount - 1);
+            LOG.info("Server: " + this.toString() + " voterName: "+voterName +" oldVote: "+ oldVote);
+        }
+        votes.put(voterName, newVote);
+        int oldCount = votesCount.get(newVote);
+        votesCount.put(newVote, oldCount + 1);
+        LOG.info("Server: " + this.toString() + " voterName: "+voterName +" newVote: "+ newVote);
+        lastVote = null;
+        isPending.set(false);
     }
 
     private void onNodeDeleted(String nodePath) {
@@ -191,7 +243,6 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         if(globalMasterPath.equals(globalServerPath)) configureGlobalMaster();
         else connectGlobalMaster();
     }
-
 
     private void onNodeChildrenChanged(String nodePath) {
         if (nodePath.equals(globalPath + "/LiveNodes")) {
@@ -232,16 +283,9 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 break;
         }
     }
+    /*** END: watcher methods ***/
 
-    @Override
-    public String toString() {
-        return "ElectionsServer{" +
-                "selfAddress='" + selfAddress + '\'' +
-                ", stateNumber=" + state +
-                ", serverPath='" + serverPath + '\'' +
-                '}';
-    }
-
+    /*** START: ElectionsServer gRPC methods ***/
     @Override
     public void vote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
         AdminOuterClass.Void rep = AdminOuterClass.Void
@@ -295,16 +339,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
             responseObserver.onCompleted();
             return;
         }
-        if (!masterPath.equals(serverPath)) {
-            master.broadcastVote(request.getVoterName(), request.getCandidateName(), request.getState());
-        } else {
-            synchronized (lockVote) {
-                for (ElectionsClient slave : slaves) {
-                    slave.vote(request.getVoterName(), request.getCandidateName(), request.getState());
-                }
-                ZooKeeperService.incDataByOne(statePath + "/Commit");
-            }
-        }
+        broadcastVote(request.getVoterName(), request.getCandidateName(), request.getState());
         responseObserver.onCompleted();
     }
 
@@ -344,6 +379,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         }
         responseObserver.onCompleted();
     }
+    /*** END: ElectionsServer gRPC methods ***/
 
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
 //        org.apache.log4j.BasicConfigurator.configure();
@@ -353,8 +389,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         String host = input.nextLine();
         System.out.print("gRPC port: ");
         int grpcPort = input.nextInt();
-        var electionsServer = new ElectionsServerImpl(host+":"+grpcPort, "California", grpcPort); // zkHost: "127.0.0.1:2181"
-        electionsServer.propose();
+        var electionsServer = new ElectionsServerImpl(); // zkHost: "127.0.0.1:2181"
+        electionsServer.init(host+":"+grpcPort, "California", grpcPort);
         System.out.println("Hello");
         while (true) {}
     }

@@ -55,13 +55,7 @@ public class VotesController {
             throw new VoterNotFoundException(voterName); // TODO: impl CandidateNotFoundException(); assume candidate is valid if exists
         }
         var candidate = payload.get("candidate").toString();
-        ElectionsServerOuterClass.VoteRequest voteRequest = ElectionsServerOuterClass.VoteRequest
-                .newBuilder()
-                .setCandidateName(candidate)
-                .setState(stateName)
-                .setVoterName(voterName)
-                .build();
-        server.broadcastVote(voteRequest, null);
+        server.sendVote(voterName,candidate,stateName);
         return new ResponseEntity<Void>(HttpStatus.OK);
     }
 }

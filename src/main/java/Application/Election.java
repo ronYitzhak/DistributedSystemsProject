@@ -17,6 +17,7 @@ import java.util.HashMap;
 * 1. impl committeeServer - start(GAL), stop(GAL), status (RON)
 *       What happens with "start on start?" nothing,
 *       "global master fall on start?" start adminRPC will call next global master.
+* 1.2 handle error flows (gRPC falls in the middle and such)
 * 2. submit candidates + servers lists (REST or gRPC) by committee (RON if Dolev answers)
 * 3. implement REST - vote function - to fix with server send broadcast (GAL)
 * 4. TESTING - docker (RON)
@@ -31,27 +32,27 @@ public class Election {
     public static void main(String[] args) {
 //        org.apache.log4j.BasicConfigurator.configure();
         //TODO: get parameter for builder from user\commandline\somehow
+        String host = "127.0.0.1";
+        int grpcPort = 55550;
+        String state = "california";
 
-        try {
-            String host = "127.0.0.1";
-            int grpcPort = 55550;
-            String state = "california";
 
-            var electionsServer = ElectionServerFactory.initElectionServer(host+":"+grpcPort, state, grpcPort);
-            String zkHost = "127.0.0.1:2181";
-            ZooKeeperService.init(zkHost, electionsServer);
-            electionsServer.propose();
-            System.out.println("Hello");
+        var electionsServer = ElectionServerFactory.instance();
+        String zkHost = "127.0.0.1:2181";
+        ZooKeeperService.init(zkHost, electionsServer);
 
-            int restPort = 9999;
-            HashMap<String, Object> props = new HashMap<>();
-            props.put("server.port", restPort);
-            new SpringApplicationBuilder()
-                    .sources(Election.class)
-                    .properties(props)
-                    .run();
+        electionsServer.init(host + ":" + grpcPort, state, grpcPort);
+        System.out.println("Hello");
 
-            LOG.info("rest initialized on port " + restPort);
+        int restPort = 9999;
+        HashMap<String, Object> props = new HashMap<>();
+        props.put("server.port", restPort);
+        new SpringApplicationBuilder()
+                .sources(Election.class)
+                .properties(props)
+                .run();
+
+        LOG.info("rest initialized on port " + restPort);
 /*
         Scanner input = new Scanner(System.in);
         System.out.print("gRPC self ip: ");
@@ -69,13 +70,7 @@ public class Election {
             LOG.info("ElectionsServerImpl proposed on host: " + host + " and port: " + grpcPort);
             System.out.println("Hello");
  */
-            while (true) {}
-        } catch (InterruptedException e) {
-            LOG.info("InterruptedException - should not get here");
-            e.printStackTrace();
-        } catch (KeeperException e) {
-            LOG.info("KeeperException - should not get here");
-            e.printStackTrace();
+        while (true) {
         }
     }
 }
