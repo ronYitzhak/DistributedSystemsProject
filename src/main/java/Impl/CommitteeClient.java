@@ -41,7 +41,7 @@ public class CommitteeClient {
         LOG.info("CommitteeClient calling start");
         var electionsClient = getRandomElectionsClient(false);
         LOG.info("CommitteeClient calling start from server: " + electionsClient.toString());
-        electionsClient.start();
+        electionsClient.broadcastStart();
         LOG.info("Elections started");
     }
 
@@ -49,7 +49,7 @@ public class CommitteeClient {
         LOG.info("CommitteeClient calling stop");
         var electionsClient = getRandomElectionsClient(false);
         LOG.info("CommitteeClient calling stop from server: " + electionsClient.toString());
-        electionsClient.stop();
+        electionsClient.broadcastStop();
         LOG.info("Elections stopped");
     }
 
