@@ -394,16 +394,6 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
 
     /*** START: ElectionsServer committee methods ***/
     @Override
-    public void electionsStart(ElectionsServerOuterClass.Void request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
-        // TODO: impl
-    }
-
-    @Override
-    public void electionsStop(ElectionsServerOuterClass.Void request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
-        // TODO: impl
-    }
-
-    @Override
     public void electionsGetStatus(ElectionsServerOuterClass.StateStatusRequest request, StreamObserver<ElectionsServerOuterClass.StateStatusResponse> responseObserver) {
         ElectionsServerOuterClass.StateStatusResponse response;
         if (request.getState().equals(this.state)) {

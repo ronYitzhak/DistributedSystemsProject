@@ -37,12 +37,20 @@ public class CommitteeClient {
         return electionsClient;
     }
 
-    public void start() {
-        // TODO: impl
+    public void startElections() {
+        LOG.info("CommitteeClient calling start");
+        var electionsClient = getRandomElectionsClient(false);
+        LOG.info("CommitteeClient calling start from server: " + electionsClient.toString());
+        electionsClient.start();
+        LOG.info("Elections started");
     }
 
-    public void stop() {
-        // TODO: impl
+    public void stopElections() {
+        LOG.info("CommitteeClient calling stop");
+        var electionsClient = getRandomElectionsClient(false);
+        LOG.info("CommitteeClient calling stop from server: " + electionsClient.toString());
+        electionsClient.stop();
+        LOG.info("Elections stopped");
     }
 
     /**

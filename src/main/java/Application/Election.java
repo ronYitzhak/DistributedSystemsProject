@@ -64,7 +64,7 @@ public class Election {
         LOG.info("rest initialized on port " + restPort);
 
         var electionsClient = new ElectionsClient(host + ":" + grpcPort);
-        electionsClient.start();
+        electionsClient.broadcastStart();
 
         var committeeClient = new CommitteeClient();
         var status = committeeClient.getStatus("california");

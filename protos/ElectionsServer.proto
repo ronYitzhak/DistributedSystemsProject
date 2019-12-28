@@ -37,12 +37,10 @@ service ElectionsServer {
     // servers communication methods:
     rpc BroadcastVote (VoteRequest) returns (Void) {}
     rpc Start (Void) returns (Void) {}
-    rpc BroadcastStart (Void) returns (Void) {}
     rpc Stop (Void) returns (Void) {}
-    rpc BroadcastStop (Void) returns (Void) {}
 
     // committee operations:
-    rpc ElectionsStart (Void) returns (Void) {}
-    rpc ElectionsStop (Void) returns (Void) {}
+    rpc BroadcastStart (Void) returns (Void) {}
+    rpc BroadcastStop (Void) returns (Void) {}
     rpc ElectionsGetStatus (StateStatusRequest) returns (StateStatusResponse) {}
 }

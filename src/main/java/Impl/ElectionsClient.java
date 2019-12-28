@@ -63,14 +63,6 @@ public class ElectionsClient {
         stub.broadcastStop(v);
     }
 
-    public void electionsStart() {
-        // TODO: impl
-    }
-
-    public void electionsStop() {
-        // TODO: impl
-    }
-
     public ElectionsServerOuterClass.StateStatusResponse electionsGetStatus(String state) {
         var request = ElectionsServerOuterClass.StateStatusRequest.newBuilder()
                 .setState(state)
