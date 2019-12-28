@@ -2,7 +2,6 @@ package Impl;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import protos.CommitteeClientOuterClass;
 import protos.ElectionsServerGrpc;
 import protos.ElectionsServerOuterClass;
 
@@ -32,13 +31,13 @@ public class ElectionsClient {
     }
 
     public void start() {
-        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
+        ElectionsServerOuterClass.Void v = ElectionsServerOuterClass.Void.newBuilder()
                 .build();
         stub.start(v);
     }
 
     public void stop() {
-        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
+        ElectionsServerOuterClass.Void v = ElectionsServerOuterClass.Void.newBuilder()
                 .build();
         stub.stop(v);
     }
@@ -53,14 +52,29 @@ public class ElectionsClient {
     }
 
     public void broadcastStart() {
-        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
+        ElectionsServerOuterClass.Void v = ElectionsServerOuterClass.Void.newBuilder()
                 .build();
         stub.broadcastStart(v);
     }
 
     public void broadcastStop() {
-        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
+        ElectionsServerOuterClass.Void v = ElectionsServerOuterClass.Void.newBuilder()
                 .build();
         stub.broadcastStop(v);
+    }
+
+    public void electionsStart() {
+        // TODO: impl
+    }
+
+    public void electionsStop() {
+        // TODO: impl
+    }
+
+    public ElectionsServerOuterClass.StateStatusResponse electionsGetStatus(String state) {
+        var request = ElectionsServerOuterClass.StateStatusRequest.newBuilder()
+                .setState(state)
+                .build();
+        return stub.electionsGetStatus(request); // TODO: should handle connection errors here?
     }
 }

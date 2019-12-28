@@ -2,10 +2,10 @@ package Impl;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import protos.CommitteeClientOuterClass;
 import protos.ElectionsServerGrpc;
 import protos.ElectionsServerOuterClass;
 
+// TODO: delete
 public class VoteClientTest {
     private ElectionsServerGrpc.ElectionsServerBlockingStub stub;
     private ManagedChannel channel;
@@ -32,7 +32,7 @@ public class VoteClientTest {
     }
 
     public void start() {
-        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
+        ElectionsServerOuterClass.Void v = ElectionsServerOuterClass.Void.newBuilder()
                 .build();
         stub.broadcastStart(v);
     }

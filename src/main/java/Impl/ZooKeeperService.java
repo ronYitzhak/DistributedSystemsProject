@@ -11,7 +11,7 @@ import java.util.List;
 
 public class ZooKeeperService {
     private static final Logger LOG = LoggerFactory.getLogger(ElectionsServerImpl.class);
-    private static final int timeout = 3000;
+    private static final int timeout = 3000000; // todo: session timeout?
     private static ZooKeeper zooKeeper;
 
     public static void init(String zkHost, Watcher watcher) {

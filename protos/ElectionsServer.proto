@@ -1,6 +1,7 @@
 syntax = "proto3";
 package protos;
-import "CommitteeClient.proto";
+
+message Void {}
 
 message VoteRequest {
     string voterName = 1;
@@ -8,11 +9,40 @@ message VoteRequest {
     string state = 3;
 }
 
+message StateStatusRequest {
+    string state = 1;
+}
+
+message CandidateStateStatus {
+    string candidateName = 1;
+    int32 count = 2;
+}
+
+message StateStatusResponse {
+    string state = 1;
+    repeated CandidateStateStatus candidatesStatus = 2;
+    int32 numberOfElectors = 3;
+    string leadingCandidateName = 4;
+}
+
+message GlobalStatusResponse {
+    repeated StateStatusResponse candidatesStatus = 1;
+    string leadingCandidateName = 2;
+}
+
 service ElectionsServer {
+    // client operation:
     rpc Vote (VoteRequest) returns (Void) {}
+
+    // servers communication methods:
     rpc BroadcastVote (VoteRequest) returns (Void) {}
     rpc Start (Void) returns (Void) {}
     rpc BroadcastStart (Void) returns (Void) {}
     rpc Stop (Void) returns (Void) {}
     rpc BroadcastStop (Void) returns (Void) {}
+
+    // committee operations:
+    rpc ElectionsStart (Void) returns (Void) {}
+    rpc ElectionsStop (Void) returns (Void) {}
+    rpc ElectionsGetStatus (StateStatusRequest) returns (StateStatusResponse) {}
 }

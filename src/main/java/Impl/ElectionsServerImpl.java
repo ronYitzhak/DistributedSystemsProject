@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-import protos.CommitteeClientOuterClass;
 import protos.ElectionsServerGrpc;
 import protos.ElectionsServerOuterClass;
 
@@ -20,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImplBase implements Watcher {
     private static final Logger LOG = LoggerFactory.getLogger(ElectionsServerImpl.class);
+    private static Random rand = new Random();
     private static String root = "/Application.Election";
     private static String globalPath = "/Application.Election/Global";
     private ConcurrentHashMap<String, String> votes = new ConcurrentHashMap<>(); // clientName -> candidateName
@@ -165,10 +165,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         if(this.state.equals(state)) {
             broadcastVote(voterName, candidateName, state);
         } else {
-            List<String> stateServers = ZooKeeperService.getChildrenData(root + state + "/LiveNodes", false);
-            Random rand = new Random();
-            String chosenHost = stateServers.get(rand.nextInt(stateServers.size()));
-            ElectionsClient chosenServer = new ElectionsClient(chosenHost);
+            ElectionsClient chosenServer = getStateElectionsClient(state);
             chosenServer.broadcastVote(voterName,candidateName,state);
         }
     }
@@ -192,6 +189,17 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 ", stateNumber=" + state +
                 ", serverPath='" + serverPath + '\'' +
                 '}';
+    }
+
+    private ElectionsClient getStateElectionsClient(String state) {
+        List<String> stateServers = ZooKeeperService.getChildrenData(root + "/" + state + "/LiveNodes", false);
+        String chosenHost = stateServers.get(rand.nextInt(stateServers.size()));
+        return new ElectionsClient(chosenHost);
+    }
+
+    private int getNoElectors() {
+        // TODO: impl
+        return 3;
     }
     /*** END: ElectionsServer methods ***/
 
@@ -286,9 +294,10 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     /*** END: watcher methods ***/
 
     /*** START: ElectionsServer gRPC methods ***/
+    /*** START: ElectionsServer client operation ***/
     @Override
-    public void vote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
-        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
+    public void vote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
+        ElectionsServerOuterClass.Void rep = ElectionsServerOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -302,10 +311,12 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         lastVote = new Pair<>(request.getVoterName(), request.getCandidateName());
         responseObserver.onCompleted();
     }
+    /*** End: ElectionsServer client operation ***/
 
+    /*** START: ElectionsServer communication methods ***/
     @Override
-    public void start(CommitteeClientOuterClass.Void request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
-        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
+    public void start(ElectionsServerOuterClass.Void request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
+        ElectionsServerOuterClass.Void rep = ElectionsServerOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -314,8 +325,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void stop(CommitteeClientOuterClass.Void request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
-        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
+    public void stop(ElectionsServerOuterClass.Void request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
+        ElectionsServerOuterClass.Void rep = ElectionsServerOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -324,8 +335,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void broadcastVote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
-        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
+    public void broadcastVote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
+        ElectionsServerOuterClass.Void rep = ElectionsServerOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -344,8 +355,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void broadcastStart(CommitteeClientOuterClass.Void request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
-        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
+    public void broadcastStart(ElectionsServerOuterClass.Void request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
+        ElectionsServerOuterClass.Void rep = ElectionsServerOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -363,8 +374,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void broadcastStop(CommitteeClientOuterClass.Void request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
-        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
+    public void broadcastStop(ElectionsServerOuterClass.Void request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
+        ElectionsServerOuterClass.Void rep = ElectionsServerOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -379,6 +390,63 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         }
         responseObserver.onCompleted();
     }
+    /*** END: ElectionsServer communication methods ***/
+
+    /*** START: ElectionsServer committee methods ***/
+    @Override
+    public void electionsStart(ElectionsServerOuterClass.Void request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
+        // TODO: impl
+    }
+
+    @Override
+    public void electionsStop(ElectionsServerOuterClass.Void request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
+        // TODO: impl
+    }
+
+    @Override
+    public void electionsGetStatus(ElectionsServerOuterClass.StateStatusRequest request, StreamObserver<ElectionsServerOuterClass.StateStatusResponse> responseObserver) {
+        ElectionsServerOuterClass.StateStatusResponse response;
+        if (request.getState().equals(this.state)) {
+            // if my state -> retrieve result, otherwise -> pick a server from the relevant state by zk and send it the req
+            LOG.info("get status from the right state: " + this.state + ". returns the in-memory result");
+            response = getStateStatusResponse(request);
+        } else {
+            // find a server from the relevant state and return its response
+            LOG.info("get status from state " + request.getState() + " to state: " + this.state + ". sends the request to the relevant state");
+            var electionsClient = getStateElectionsClient(request.getState());
+            response = electionsClient.electionsGetStatus(this.state);
+        }
+        LOG.info("status has been returned: " + response.toString());
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    private ElectionsServerOuterClass.StateStatusResponse getStateStatusResponse(ElectionsServerOuterClass.StateStatusRequest request) {
+        var stateStatusBuilder = ElectionsServerOuterClass.StateStatusResponse.newBuilder();
+
+        // create CandidateStateStatus objects from votes counts and add them to the response
+        votesCount.entrySet().stream()
+                .map(e ->
+                    ElectionsServerOuterClass.CandidateStateStatus.newBuilder()
+                            .setCandidateName(e.getKey())
+                            .setCount(e.getValue())
+                            .build()
+                )
+                .forEach(stateStatusBuilder::addCandidatesStatus);
+
+        String leadingCandidate = votesCount.entrySet().stream()
+                .max(Comparator.comparing(Map.Entry::getValue))
+                .map(Map.Entry::getKey)
+                .get();
+
+        return stateStatusBuilder
+                .setState(request.getState())
+                .setLeadingCandidateName(leadingCandidate)
+                .setNumberOfElectors(getNoElectors())
+                .build();
+    }
+
+    /*** END: ElectionsServer committee methods ***/
     /*** END: ElectionsServer gRPC methods ***/
 
     public static void main(String[] args) throws IOException, KeeperException, InterruptedException {

@@ -1,9 +1,6 @@
 package Application;
 
-import Impl.ElectionServerFactory;
-import Impl.ElectionsServerImpl;
-import Impl.ZooKeeperService;
-import org.apache.zookeeper.KeeperException;
+import Impl.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -33,9 +30,21 @@ public class Election {
 //        org.apache.log4j.BasicConfigurator.configure();
         //TODO: get parameter for builder from user\commandline\somehow
         String host = "127.0.0.1";
-        int grpcPort = 55550;
+        int grpcPort = 55500;
         String state = "california";
 
+//        var serversPerState = CustomCSVParser.getServersPerState();
+//        var servers = serversPerState.entrySet().stream()
+//                .flatMap(e -> e.getValue().stream().map(p -> new Triplet(e.getKey(), p.getValue0(), p.getValue1())))
+//                .map(t -> {
+//                    String s = (String)t.getValue0();
+//                    String h = (String)t.getValue1();
+//                    int p = (int)t.getValue2();
+//                    var res = new ElectionsServerImpl();
+//                    res.init(h + ":" + p, s, p);
+//                    return res;
+//                })
+//                .collect(Collectors.toList());
 
         var electionsServer = ElectionServerFactory.instance();
         String zkHost = "127.0.0.1:2181";
@@ -53,6 +62,16 @@ public class Election {
                 .run();
 
         LOG.info("rest initialized on port " + restPort);
+
+        var electionsClient = new ElectionsClient(host + ":" + grpcPort);
+        electionsClient.start();
+
+        var committeeClient = new CommitteeClient();
+        var status = committeeClient.getStatus("california");
+        LOG.info(status.toString());
+//        var globalStatus = committeeClient.getGlobalStatus();
+//        LOG.info(globalStatus.toString());
+
 /*
         Scanner input = new Scanner(System.in);
         System.out.print("gRPC self ip: ");
