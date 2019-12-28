@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-import protos.AdminOuterClass;
+import protos.CommitteeClientOuterClass;
 import protos.ElectionsServerGrpc;
 import protos.ElectionsServerOuterClass;
 
@@ -287,8 +287,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
 
     /*** START: ElectionsServer gRPC methods ***/
     @Override
-    public void vote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
-        AdminOuterClass.Void rep = AdminOuterClass.Void
+    public void vote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
+        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -304,8 +304,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void start(AdminOuterClass.Void request, StreamObserver<AdminOuterClass.Void> responseObserver) {
-        AdminOuterClass.Void rep = AdminOuterClass.Void
+    public void start(CommitteeClientOuterClass.Void request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
+        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -314,8 +314,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void stop(AdminOuterClass.Void request, StreamObserver<AdminOuterClass.Void> responseObserver) {
-        AdminOuterClass.Void rep = AdminOuterClass.Void
+    public void stop(CommitteeClientOuterClass.Void request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
+        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -324,8 +324,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void broadcastVote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<AdminOuterClass.Void> responseObserver) {
-        AdminOuterClass.Void rep = AdminOuterClass.Void
+    public void broadcastVote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
+        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -344,8 +344,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void broadcastStart(AdminOuterClass.Void request, StreamObserver<AdminOuterClass.Void> responseObserver) {
-        AdminOuterClass.Void rep = AdminOuterClass.Void
+    public void broadcastStart(CommitteeClientOuterClass.Void request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
+        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
@@ -363,8 +363,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void broadcastStop(AdminOuterClass.Void request, StreamObserver<AdminOuterClass.Void> responseObserver) {
-        AdminOuterClass.Void rep = AdminOuterClass.Void
+    public void broadcastStop(CommitteeClientOuterClass.Void request, StreamObserver<CommitteeClientOuterClass.Void> responseObserver) {
+        CommitteeClientOuterClass.Void rep = CommitteeClientOuterClass.Void
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);

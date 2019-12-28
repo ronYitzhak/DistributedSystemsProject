@@ -24,7 +24,7 @@ message GlobalStatusResponse {
     string leadingCandidateName = 2;
 }
 
-service Admin {
+service CommitteeClient {
     rpc Start (Void) returns (Void) {}
     rpc Stop (Void) returns (Void) {}
     rpc GetStatus (StateStatusRequest) returns (StateStatusResponse) {}

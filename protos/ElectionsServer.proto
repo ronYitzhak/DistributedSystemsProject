@@ -1,6 +1,6 @@
 syntax = "proto3";
 package protos;
-import "Admin.proto";
+import "CommitteeClient.proto";
 
 message VoteRequest {
     string voterName = 1;

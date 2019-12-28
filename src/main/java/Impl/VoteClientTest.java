@@ -2,7 +2,7 @@ package Impl;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import protos.AdminOuterClass;
+import protos.CommitteeClientOuterClass;
 import protos.ElectionsServerGrpc;
 import protos.ElectionsServerOuterClass;
 
@@ -32,7 +32,7 @@ public class VoteClientTest {
     }
 
     public void start() {
-        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
                 .build();
         stub.broadcastStart(v);
     }

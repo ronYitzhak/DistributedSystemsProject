@@ -2,8 +2,7 @@ package Impl;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.apache.zookeeper.server.quorum.Vote;
-import protos.AdminOuterClass;
+import protos.CommitteeClientOuterClass;
 import protos.ElectionsServerGrpc;
 import protos.ElectionsServerOuterClass;
 
@@ -33,13 +32,13 @@ public class ElectionsClient {
     }
 
     public void start() {
-        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
                 .build();
         stub.start(v);
     }
 
     public void stop() {
-        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
                 .build();
         stub.stop(v);
     }
@@ -54,13 +53,13 @@ public class ElectionsClient {
     }
 
     public void broadcastStart() {
-        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
                 .build();
         stub.broadcastStart(v);
     }
 
     public void broadcastStop() {
-        AdminOuterClass.Void v = AdminOuterClass.Void.newBuilder()
+        CommitteeClientOuterClass.Void v = CommitteeClientOuterClass.Void.newBuilder()
                 .build();
         stub.broadcastStop(v);
     }
