@@ -93,22 +93,27 @@ public class CustomCSVParser {
         }
     }
 
-    public static HashSet<String> getClientsPerState(String state)
+    public static HashMap<String, HashSet<String>> getVotersPerState()
     {
         try {
             FileReader filereader = new FileReader(stateClientsFileName);
             CSVReader csvReader = new CSVReader(filereader);
             String[] nextRecord;
 
-            HashSet<String> clients = new HashSet<>();
+            HashMap<String,HashSet<String>> votersPerState = new HashMap<>();
+
+            HashSet<String> voters = new HashSet<>();
+            String state = "";
             while ((nextRecord = csvReader.readNext()) != null) {
                 for (int i = 0; i < nextRecord.length; i++) {
                     var cell = nextRecord[i];
-                    if (i == 0 && !cell.equals(state)) break;
-                    if (i != 0) clients.add(cell);
+                    if (i == 0) state = cell;
+                    if (i != 0) voters.add(cell);
                 }
+                votersPerState.put(state,voters);
+                voters = new HashSet<>();
             }
-            return clients;
+            return votersPerState;
         }
         catch (Exception e) {
             e.printStackTrace();
