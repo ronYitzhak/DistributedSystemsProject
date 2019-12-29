@@ -1,5 +1,6 @@
 package Impl;
 
+import io.grpc.StatusRuntimeException;
 import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,19 +39,41 @@ public class CommitteeClient {
     }
 
     public void startElections() {
-        LOG.info("CommitteeClient calling start");
         var electionsClient = getRandomElectionsClient(false);
-        LOG.info("CommitteeClient calling start from server: " + electionsClient.toString());
-        electionsClient.broadcastStart();
-        LOG.info("Elections started");
+        int noRetries = 0;
+        while (noRetries < maxNoRetries) {
+            try {
+                LOG.info("CommitteeClient calling start");
+                LOG.info("CommitteeClient calling start from server: " + electionsClient.toString());
+                electionsClient.broadcastStart();
+                LOG.info("Elections started");
+                return;
+            } catch (StatusRuntimeException e) {
+                electionsClient = getRandomElectionsClient(true);
+                LOG.info("CommitteeClient could not start elections. current no retries: " + noRetries);
+                noRetries++;
+            }
+        }
+        LOG.info("CommitteeClient error: max no of retries reached, elections couldn't be started.");
     }
 
     public void stopElections() {
-        LOG.info("CommitteeClient calling stop");
         var electionsClient = getRandomElectionsClient(false);
-        LOG.info("CommitteeClient calling stop from server: " + electionsClient.toString());
-        electionsClient.broadcastStop();
-        LOG.info("Elections stopped");
+        int noRetries = 0;
+        while (noRetries < maxNoRetries) {
+            try {
+                LOG.info("CommitteeClient calling stop");
+                LOG.info("CommitteeClient calling stop from server: " + electionsClient.toString());
+                electionsClient.broadcastStop();
+                LOG.info("Elections stopped");
+                return;
+            } catch (StatusRuntimeException e) {
+                electionsClient = getRandomElectionsClient(true);
+                LOG.info("CommitteeClient could not stop elections. current no retries: " + noRetries);
+                noRetries++;
+            }
+        }
+        LOG.info("CommitteeClient error: max no of retries reached, elections couldn't be stopped.");
     }
 
     /**
@@ -66,18 +89,17 @@ public class CommitteeClient {
         ElectionsServerOuterClass.StateStatusResponse stateStatus;
         int noRetries = 0;
 
-        do {
-            stateStatus = electionsClient.electionsGetStatus(state);
-            if (stateStatus != null) {
+        while (noRetries < maxNoRetries) {
+            try {
+                stateStatus = electionsClient.electionsGetStatus(state);
                 LOG.info("CommitteeClient returned state status for state: " + state + ": " + stateStatus.toString() + ". no retries: " + noRetries);
                 return stateStatus;
-            } else {
+            } catch (StatusRuntimeException e) {
                 LOG.info("CommitteeClient could not get state status for state: " + state + ". retrying. current no retries: " + noRetries);
                 electionsClient = getRandomElectionsClient(true);
                 noRetries++;
             }
-        } while (noRetries < maxNoRetries);
-
+        }
         LOG.error("CommitteeClient error: could not get state status for state: " + state);
         return null;
     }
