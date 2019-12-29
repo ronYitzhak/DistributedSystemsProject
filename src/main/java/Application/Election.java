@@ -7,7 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.ComponentScan;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 /*
 * TODOs:
@@ -27,35 +30,28 @@ public class Election {
     private static final Logger LOG = LoggerFactory.getLogger(Election.class);
 
     public static void main(String[] args) {
-//        org.apache.log4j.BasicConfigurator.configure();
-        //TODO: get parameter for builder from user\commandline\somehow
-        //TODO: configure: 1. electionsServer(host:port), gRPCServer(port), zkService(host:port), restController(host,port,config file)
-        String host = "127.0.0.1";
-        int grpcPort = 55555;
-        String state = "california";
+        //args list: self-address, state, zkhost, grpcPort, restport
+        List<String> listArgs = new ArrayList<String>();
+        Collections.addAll(listArgs, args);
+        switch (listArgs.size()) {
+            case 0:
+                listArgs.add("127.0.0.1");
+            case 1:
+                listArgs.add("california");
+            case 2:
+                listArgs.add("127.0.0.1:2181");
+            case 3:
+                listArgs.add("55555");
+            case 4:
+                listArgs.add("9999");
+        }
 
-//        var serversPerState = CustomCSVParser.getServersPerState();
-//        var servers = serversPerState.entrySet().stream()
-//                .flatMap(e -> e.getValue().stream().map(p -> new Triplet(e.getKey(), p.getValue0(), p.getValue1())))
-//                .map(t -> {
-//                    String s = (String)t.getValue0();
-//                    String h = (String)t.getValue1();
-//                    int p = (int)t.getValue2();
-//                    var res = new ElectionsServerImpl();
-//                    res.init(h + ":" + p, s, p);
-//                    return res;
-//                })
-//                .collect(Collectors.toList());
+        String host = listArgs.get(0);
+        String state = listArgs.get(1);
+        String zkHost = listArgs.get(2);
+        int grpcPort = Integer.parseInt(listArgs.get(3));
+        int restPort = Integer.parseInt(listArgs.get(4));
 
-        var electionsServer = ElectionServerFactory.instance();
-//        String zkHost = "10.0.75.1:2181";
-        String zkHost = "172.17.0.2:2181";
-        ZooKeeperService.init(zkHost, electionsServer);
-
-        electionsServer.init(host + ":" + grpcPort, state, grpcPort);
-        System.out.println("Hello");
-
-        int restPort = 9999;
         HashMap<String, Object> props = new HashMap<>();
         props.put("server.port", restPort);
         new SpringApplicationBuilder()
@@ -63,34 +59,14 @@ public class Election {
                 .properties(props)
                 .run();
 
+        var electionsServer = ElectionServerFactory.instance();
+
+        ZooKeeperService.init(zkHost, electionsServer);
+        electionsServer.init(host + ":" + grpcPort, state, grpcPort);
+        LOG.info("grpc initialized on port " + grpcPort);
         LOG.info("rest initialized on port " + restPort);
-/*
-        var electionsClient = new ElectionsClient(host + ":" + grpcPort);
-        electionsClient.broadcastStart();
 
-        var committeeClient = new CommitteeClient();
-        var status = committeeClient.getStatus("california");
-        LOG.info(status.toString());
-//        var globalStatus = committeeClient.getGlobalStatus();
-//        LOG.info(globalStatus.toString());
 
-/*
-        Scanner input = new Scanner(System.in);
-        System.out.print("gRPC self ip: ");
-        String host = input.nextLine();
-        System.out.print("gRPC port: ");
-        int grpcPort = input.nextInt();
-        String zkHost = "127.0.0.1:2181";
-
-        try {
-            ElectionsServerImpl electionsServer = new ElectionsServerImpl(host+":"+grpcPort, "California", grpcPort);
-            LOG.info("ElectionsServerImpl initialized on host: " + host + " and port: " + grpcPort);
-            ZooKeeperService.init(zkHost, electionsServer);
-            LOG.info("ZooKeeperService initialized on host: " + zkHost);
-            electionsServer.propose();
-            LOG.info("ElectionsServerImpl proposed on host: " + host + " and port: " + grpcPort);
-            System.out.println("Hello");
- */
         while (true) {
         }
     }

@@ -75,6 +75,23 @@ public class CustomCSVParser {
         }
     }
 
+    public static int getElectorsOfState(String state) {
+        try {
+            FileReader filereader = new FileReader(statesFileName);
+            CSVReader csvReader = new CSVReader(filereader);
+            String[] nextRecord;
+            while ((nextRecord = csvReader.readNext()) != null) {
+                if(nextRecord[0].equals(state))
+                    return Integer.parseInt(nextRecord[1]);
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+        return -1;
+    }
+
     public static HashSet<String> getCandidates() {
         try {
             FileReader filereader = new FileReader(candidatesFileName);
