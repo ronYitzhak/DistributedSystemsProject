@@ -141,4 +141,35 @@ public class CommitteeClient {
                 .setLeadingCandidateName(leadingCandidate)
                 .build();
     }
+
+    public static void main(String[] args) {
+        var committeeClient = new CommitteeClient();
+
+        Scanner input = new Scanner(System.in);
+        while (true) {
+            System.out.print("supported commands: start, stop, status, global_status\n");
+            System.out.print("please insert command: ");
+            String command = input.nextLine();
+
+            if (command.equals("start")) {
+                System.out.print("executing command: " + command + "...");
+                committeeClient.startElections();
+            } else if (command.equals("stop")) {
+                System.out.print("executing command: " + command + "...");
+                committeeClient.stopElections();
+            } else if (command.equals("status")) {
+                System.out.print("please choose a state: ");
+                String state = input.nextLine();
+                System.out.print("executing command: " + command + " for country" + state + "...");
+                var status = committeeClient.getStatus(state);
+                System.out.print("status: " + status.toString());
+            } else if (command.equals("global_status")) {
+                System.out.print("executing command: " + command + "...");
+                var globalStatus = committeeClient.getGlobalStatus();
+                System.out.print("global status: " + globalStatus.toString());
+            } else {
+                System.out.print("command: " + command + " is not valid. please insert a valid command.");
+            }
+        }
+    }
 }
