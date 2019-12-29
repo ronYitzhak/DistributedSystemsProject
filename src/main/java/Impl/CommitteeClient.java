@@ -152,21 +152,37 @@ public class CommitteeClient {
             String command = input.nextLine();
 
             if (command.equals("start")) {
-                System.out.print("executing command: " + command + "...");
-                committeeClient.startElections();
+                try {
+                    System.out.print("executing command: " + command + "...");
+                    committeeClient.startElections();
+                } catch (Exception e) {
+                    System.out.print("Exception!!!!!!!!!!\n" + e);
+                }
             } else if (command.equals("stop")) {
-                System.out.print("executing command: " + command + "...");
-                committeeClient.stopElections();
+                try {
+                    System.out.print("executing command: " + command + "...");
+                    committeeClient.stopElections();
+                } catch (Exception e) {
+                    System.out.print("Exception!!!!!!!!!!\n" + e);
+                }
             } else if (command.equals("status")) {
-                System.out.print("please choose a state: ");
-                String state = input.nextLine();
-                System.out.print("executing command: " + command + " for country" + state + "...");
-                var status = committeeClient.getStatus(state);
-                System.out.print("status: " + status.toString());
+                try {
+                    System.out.print("please choose a state: ");
+                    String state = input.nextLine();
+                    System.out.print("executing command: " + command + " for country" + state + "...");
+                    var status = committeeClient.getStatus(state);
+                    System.out.print("status: " + status.toString());
+                } catch (Exception e) {
+                    System.out.print("Exception!!!!!!!!!!\n" + e);
+                }
             } else if (command.equals("global_status")) {
-                System.out.print("executing command: " + command + "...");
-                var globalStatus = committeeClient.getGlobalStatus();
-                System.out.print("global status: " + globalStatus.toString());
+                try {
+                    System.out.print("executing command: " + command + "...");
+                    var globalStatus = committeeClient.getGlobalStatus();
+                    System.out.print("global status: " + globalStatus.toString());
+                } catch (Exception e) {
+                    System.out.print("Exception!!!!!!!!!!\n" + e);
+                }
             } else {
                 System.out.print("command: " + command + " is not valid. please insert a valid command.");
             }
