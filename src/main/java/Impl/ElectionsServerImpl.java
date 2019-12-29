@@ -59,6 +59,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         this.statePath = root + "/" + state;
         initGrpcElectionsServer(grpcPort);
         initZKnodes();
+        stateToVoters = CustomCSVParser.getVotersPerState();
         LOG.info("ElectionsServer of state " + state + " init!");
     }
 
@@ -143,8 +144,6 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         LOG.info("Server: " + this.toString() + " started!");
         votes = new ConcurrentHashMap<>();
         votesCount = new ConcurrentHashMap<>();
-        //TODO: how to handle clients?
-        stateToVoters = CustomCSVParser.getVotersPerState();
         HashSet<String> candidates = CustomCSVParser.getCandidates();
         for(String candidate: candidates) {
             votesCount.put(candidate,0);
