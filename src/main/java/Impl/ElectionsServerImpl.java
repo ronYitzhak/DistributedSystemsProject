@@ -277,12 +277,18 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         LOG.info("Server: " + this.toString() + " got event: " + watchedEvent.getType().toString());
         switch (watchedEvent.getType()) {
             case NodeDataChanged:
+                // master inc Commit's zNode data, time to process vote (from lastVote value)
+                // TODO: (where is the watcher?), why lastVote==null is commented out?
                 onNodeDataChanged(nodePath);
                 break;
             case NodeDeleted:
+                // master or global master have been deleted, should remove old vote (isPending=false) and choose new master
+                // if its me - configure master. otherwise, connect the chosen master
+                // TODO: (where is the watcher?)
                 onNodeDeleted(nodePath);
                 break;
             case NodeChildrenChanged:
+                // TODO: what's that?
                 onNodeChildrenChanged(nodePath);
             case NodeCreated:
             case ChildWatchRemoved:
