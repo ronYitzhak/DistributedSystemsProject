@@ -49,7 +49,7 @@ public class Election {
 
         var electionsServer = ElectionServerFactory.instance();
 //        String zkHost = "10.0.75.1:2181";
-        String zkHost = "127.0.0.1:2181";
+        String zkHost = "172.17.0.2:2181";
         ZooKeeperService.init(zkHost, electionsServer);
 
         electionsServer.init(host + ":" + grpcPort, state, grpcPort);
