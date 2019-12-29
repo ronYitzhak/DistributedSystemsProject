@@ -24,11 +24,12 @@ import java.util.HashMap;
 @SpringBootApplication
 @ComponentScan("Application.RestClient.Controllers")
 public class Election {
-    private static final Logger LOG = LoggerFactory.getLogger(ElectionsServerImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Election.class);
 
     public static void main(String[] args) {
 //        org.apache.log4j.BasicConfigurator.configure();
         //TODO: get parameter for builder from user\commandline\somehow
+        //TODO: configure: 1. electionsServer(host:port), gRPCServer(port), zkService(host:port), restController(host,port,config file)
         String host = "127.0.0.1";
         int grpcPort = 55500;
         String state = "new york";
@@ -47,6 +48,7 @@ public class Election {
 //                .collect(Collectors.toList());
 
         var electionsServer = ElectionServerFactory.instance();
+//        String zkHost = "10.0.75.1:2181";
         String zkHost = "127.0.0.1:2181";
         ZooKeeperService.init(zkHost, electionsServer);
 
