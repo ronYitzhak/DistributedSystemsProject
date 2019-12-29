@@ -25,6 +25,13 @@ class VoterNotFoundException extends RuntimeException {
     }
 }
 
+@ResponseStatus(code = HttpStatus.FORBIDDEN, reason = "Election not started")
+class ElectionNotStartedException extends RuntimeException {
+    ElectionNotStartedException() {
+        super("Election not started");
+    }
+}
+
 @RestController
 public class VotesController {
     private ElectionsServerImpl server = ElectionServerFactory.instance();
@@ -49,13 +56,9 @@ public class VotesController {
             throw new VoterNotFoundException(voterName); // TODO: impl CandidateNotFoundException(); assume candidate is valid if exists
         }
         var candidate = payload.get("candidate").toString();
-        while(true) {
-            try{
-                server.sendVote(voterName, candidate, stateName);
-                break;
-            } catch (StatusRuntimeException e) {
-            }
-        }
+        ElectionsServerOuterClass.VoteStatus.Status status = server.sendVote(voterName, candidate, stateName);
+        if(status == ElectionsServerOuterClass.VoteStatus.Status.ELECTION_NOT_STARTED)
+            throw new ElectionNotStartedException();
         return new ResponseEntity<Void>(HttpStatus.OK);
     }
 }

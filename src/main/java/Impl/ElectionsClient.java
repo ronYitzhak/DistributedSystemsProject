@@ -42,13 +42,14 @@ public class ElectionsClient {
         stub.stop(v);
     }
 
-    public void broadcastVote(String voterName, String candidateName, String state) {
+    public ElectionsServerOuterClass.VoteStatus.Status broadcastVote(String voterName, String candidateName, String state) {
         ElectionsServerOuterClass.VoteRequest v = ElectionsServerOuterClass.VoteRequest.newBuilder()
                 .setVoterName(voterName)
                 .setCandidateName(candidateName)
                 .setState(state)
                 .build();
-        stub.broadcastVote(v);
+        ElectionsServerOuterClass.VoteStatus rep = stub.broadcastVote(v);
+        return rep.getStatus();
     }
 
     public void broadcastStart() {

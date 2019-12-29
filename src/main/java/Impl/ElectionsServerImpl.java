@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+
 public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImplBase implements Watcher {
     private static final Logger LOG = LoggerFactory.getLogger(ElectionsServerImpl.class);
     private static Random rand = new Random();
@@ -167,27 +168,40 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         isActive = false;
     }
 
-    public void sendVote(String voterName, String candidateName, String voterState) {
-        if (this.state.equals(voterState)) {
-            broadcastVote(voterName, candidateName, voterState);
-        } else {
-            ElectionsClient chosenServer = null;
+    public ElectionsServerOuterClass.VoteStatus.Status sendVote(String voterName, String candidateName, String voterState) {
+        ElectionsServerOuterClass.VoteStatus.Status status;
+        while (true) {
             try {
-                chosenServer = getStateElectionsClient(voterState);
-                chosenServer.broadcastVote(voterName, candidateName, voterState);
-            } catch (NullPointerException e) {
-                LOG.error("NullPointerException - should not get here");
-                e.printStackTrace();
-            } finally {
-                chosenServer.shutdown();
+                if (this.state.equals(voterState)) {
+                    status = broadcastVote(voterName, candidateName, voterState);
+                    break;
+                } else {
+                    ElectionsClient chosenServer = null;
+                    try {
+                        chosenServer = getStateElectionsClient(voterState);
+                        status = chosenServer.broadcastVote(voterName, candidateName, voterState);
+                        break;
+                    } catch (NullPointerException e) {
+                        LOG.error("NullPointerException - should not get here");
+                        e.printStackTrace();
+                    } finally {
+                        chosenServer.shutdown();
+                    }
+                }
+            } catch (StatusRuntimeException e) {
             }
         }
+        return status;
     }
 
-    private void broadcastVote(String voterName, String candidateName, String state) {
+    private ElectionsServerOuterClass.VoteStatus.Status broadcastVote(String voterName, String candidateName, String state) {
         if (!masterPath.equals(serverPath)) {
-            master.broadcastVote(voterName, candidateName, state);
+            return master.broadcastVote(voterName, candidateName, state);
         } else {
+            if (!isActive) {
+                LOG.warn("Application not started");
+                return ElectionsServerOuterClass.VoteStatus.Status.ELECTION_NOT_STARTED;
+            }
             synchronized (lockVote) {
                 for (int i = 0; i < slaves.size();){
                     try {
@@ -202,6 +216,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 }
                 ZooKeeperService.incDataByOne(statePath + "/Commit");
             }
+            return ElectionsServerOuterClass.VoteStatus.Status.OK;
         }
     }
     @Override
@@ -324,11 +339,6 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
-        if (!isActive) {
-            LOG.warn("Application not started");
-            responseObserver.onCompleted();
-            return;
-        }
         while (isPending.compareAndExchange(false, true)) ;
         ZooKeeperService.setWatcherOnNode(statePath + "/Commit");
         lastVote = new Pair<>(request.getVoterName(), request.getCandidateName());
@@ -358,22 +368,13 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     @Override
-    public void broadcastVote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<ElectionsServerOuterClass.Void> responseObserver) {
-        ElectionsServerOuterClass.Void rep = ElectionsServerOuterClass.Void
+    public void broadcastVote(ElectionsServerOuterClass.VoteRequest request, StreamObserver<ElectionsServerOuterClass.VoteStatus> responseObserver) {
+        ElectionsServerOuterClass.VoteStatus.Status status = broadcastVote(request.getVoterName(), request.getCandidateName(), request.getState());
+        ElectionsServerOuterClass.VoteStatus rep = ElectionsServerOuterClass.VoteStatus
                 .newBuilder()
+                .setStatus(status)
                 .build();
         responseObserver.onNext(rep);
-        if (!isActive) {
-            LOG.warn("Application not started");
-            responseObserver.onCompleted();
-            return;
-        }
-        if (!request.getState().equals(state)) {
-            LOG.warn("Not the server state");
-            responseObserver.onCompleted();
-            return;
-        }
-        broadcastVote(request.getVoterName(), request.getCandidateName(), request.getState());
         responseObserver.onCompleted();
     }
 

@@ -3,6 +3,14 @@ package protos;
 
 message Void {}
 
+message VoteStatus {
+    enum Status {
+        OK = 0;
+        ELECTION_NOT_STARTED = 1;
+    }
+    Status status = 1;
+}
+
 message VoteRequest {
     string voterName = 1;
     string candidateName = 2;
@@ -35,7 +43,7 @@ service ElectionsServer {
     rpc Vote (VoteRequest) returns (Void) {}
 
     // servers communication methods:
-    rpc BroadcastVote (VoteRequest) returns (Void) {}
+    rpc BroadcastVote (VoteRequest) returns (VoteStatus) {}
     rpc Start (Void) returns (Void) {}
     rpc Stop (Void) returns (Void) {}
 
