@@ -1,9 +1,7 @@
 package Application.RestClient.Controllers;
 
 import Impl.ElectionServerFactory;
-import Application.RestClient.Models.State;
 import Impl.ElectionsServerImpl;
-import io.grpc.StatusRuntimeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,13 +34,7 @@ class ElectionNotStartedException extends RuntimeException {
 public class VotesController {
     private ElectionsServerImpl server = ElectionServerFactory.instance();
 
-    VotesController() {
-    }
-
-    @GetMapping("/states")
-    Set<State> all() {
-        return new HashSet<>();
-    }
+    VotesController() {}
 
     @PostMapping("/states/{stateName}/voters/{voterName}/vote")
     ResponseEntity<Void> vote(@PathVariable String stateName, @PathVariable String voterName, @RequestBody Map<String, Object> payload) {
