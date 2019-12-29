@@ -68,6 +68,6 @@ public class ElectionsClient {
         var request = ElectionsServerOuterClass.StateStatusRequest.newBuilder()
                 .setState(state)
                 .build();
-        return stub.electionsGetStatus(request); // TODO: should handle connection errors here?
+        return stub.electionsGetStatus(request);
     }
 }

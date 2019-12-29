@@ -34,6 +34,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     private final Object lockVote = new Object();
     private String selfAddress; // the gRPC address of the server
     private String state;
+    private int electors;
     private String serverPath;
     private String globalServerPath;
     private String statePath;
@@ -56,6 +57,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     public void init(String selfAddress, String state, int grpcPort) {
         this.selfAddress = selfAddress;
         this.state = state;
+        this.electors = CustomCSVParser.getElectorsOfState(state);
         this.statePath = root + "/" + state;
         initGrpcElectionsServer(grpcPort);
         initZKnodes();
@@ -236,8 +238,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     private int getNoElectors() {
-        // TODO: impl
-        return 3;
+        return electors;
     }
     /*** END: ElectionsServer methods ***/
 
@@ -270,7 +271,6 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
 
     private void onMasterDelete() {
         LOG.info("Server: " + this.toString() + " master NodeDeleted");
-        //TODO: lock when getting master?
         //lastVote = null;
         master.shutdown();
         isPending.set(false);
@@ -282,8 +282,6 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
 
     private void onGlobalMasterDelete() {
         LOG.info("Server: " + this.toString() + "global master NodeDeleted");
-        //TODO: lock when getting master?
-        //lastVote = null;
         globalMaster.shutdown();
         globalMasterPath = ZooKeeperService.getGlobalMaster(false);
         LOG.info("Server: " + this.toString() + " chose global master: " + globalMasterPath);
@@ -317,17 +315,15 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         switch (watchedEvent.getType()) {
             case NodeDataChanged:
                 // master inc Commit's zNode data, time to process vote (from lastVote value)
-                // TODO: (where is the watcher?), why lastVote==null is commented out?
                 onNodeDataChanged(nodePath);
                 break;
             case NodeDeleted:
                 // master or global master have been deleted, should remove old vote (isPending=false) and choose new master
                 // if its me - configure master. otherwise, connect the chosen master
-                // TODO: (where is the watcher?)
                 onNodeDeleted(nodePath);
                 break;
             case NodeChildrenChanged:
-                // TODO: what's that?
+                //dynamically connect the global masters to all of its global slaves as they are joining the network
                 onNodeChildrenChanged(nodePath);
             case NodeCreated:
             case ChildWatchRemoved:
@@ -394,7 +390,6 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         if (!globalMasterPath.equals(globalServerPath)) {
             globalMaster.broadcastStart();
         } else {
-            //TODO: start on start?
             synchronized (lockStartStop) {
                 for (int i = 0; i < globalSlaves.size();){
                     try {
