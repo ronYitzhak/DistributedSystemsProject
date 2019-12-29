@@ -1,6 +1,7 @@
 package Impl;
 
 import org.apache.zookeeper.*;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,14 +139,14 @@ public class ZooKeeperService {
         }
     }
 
-    public static ArrayList<String> getChildrenData(String path, Boolean watch) { // path of live nodes
+    public static ArrayList<Pair<String,String>> getChildrenData(String path, Boolean watch) { // path of live nodes
         try {
             var nodes = zooKeeper.getChildren(path, watch);
-            ArrayList<String> result = new ArrayList<>();
+            ArrayList<Pair<String,String>> result = new ArrayList<>();
             nodes.forEach(node -> {
                 try {
                     var host = new String(zooKeeper.getData(path + "/" + node,false,null));
-                    result.add(host);
+                    result.add(new Pair<>(path + "/" + node,host));
                 } catch (KeeperException e) {
                     LOG.error("KeeperException - should not get here");
                     e.printStackTrace();

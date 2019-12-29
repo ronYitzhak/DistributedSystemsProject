@@ -31,7 +31,7 @@ public class Election {
         //TODO: get parameter for builder from user\commandline\somehow
         String host = "127.0.0.1";
         int grpcPort = 55500;
-        String state = "california";
+        String state = "new york";
 
 //        var serversPerState = CustomCSVParser.getServersPerState();
 //        var servers = serversPerState.entrySet().stream()
@@ -53,7 +53,7 @@ public class Election {
         electionsServer.init(host + ":" + grpcPort, state, grpcPort);
         System.out.println("Hello");
 
-        int restPort = 9999;
+        int restPort = 10000;
         HashMap<String, Object> props = new HashMap<>();
         props.put("server.port", restPort);
         new SpringApplicationBuilder()
@@ -62,7 +62,7 @@ public class Election {
                 .run();
 
         LOG.info("rest initialized on port " + restPort);
-
+/*
         var electionsClient = new ElectionsClient(host + ":" + grpcPort);
         electionsClient.broadcastStart();
 

@@ -40,7 +40,7 @@ public class VoteClientTest {
     public static void main(String[] args) {
 //        org.apache.log4j.BasicConfigurator.configure();
         var galsIp = "192.168.43.247";
-        VoteClientTest client = new VoteClientTest("127.0.0.1:55550");
+        VoteClientTest client = new VoteClientTest("127.0.0.1:55500");
         client.start();
         //client.vote("gal", "0", "California");
         client.shutdown();
