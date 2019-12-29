@@ -31,8 +31,8 @@ public class Election {
         //TODO: get parameter for builder from user\commandline\somehow
         //TODO: configure: 1. electionsServer(host:port), gRPCServer(port), zkService(host:port), restController(host,port,config file)
         String host = "127.0.0.1";
-        int grpcPort = 55500;
-        String state = "new york";
+        int grpcPort = 55555;
+        String state = "california";
 
 //        var serversPerState = CustomCSVParser.getServersPerState();
 //        var servers = serversPerState.entrySet().stream()
@@ -55,7 +55,7 @@ public class Election {
         electionsServer.init(host + ":" + grpcPort, state, grpcPort);
         System.out.println("Hello");
 
-        int restPort = 10000;
+        int restPort = 9999;
         HashMap<String, Object> props = new HashMap<>();
         props.put("server.port", restPort);
         new SpringApplicationBuilder()

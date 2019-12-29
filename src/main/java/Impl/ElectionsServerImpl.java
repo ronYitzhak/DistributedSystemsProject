@@ -194,6 +194,8 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     }
 
     private ElectionsServerOuterClass.VoteStatus.Status broadcastVote(String voterName, String candidateName, String state) {
+        if (masterPath == null)
+            return ElectionsServerOuterClass.VoteStatus.Status.ELECTION_NOT_STARTED;
         if (!masterPath.equals(serverPath)) {
             return master.broadcastVote(voterName, candidateName, state);
         } else {
