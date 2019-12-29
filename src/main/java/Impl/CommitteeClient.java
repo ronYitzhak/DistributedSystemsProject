@@ -113,7 +113,7 @@ public class CommitteeClient {
      */
     public ElectionsServerOuterClass.GlobalStatusResponse getGlobalStatus() {
         // retrieve status from all the states
-        var stateStatusResponseList = states.parallelStream().map(this::getStatus).collect(Collectors.toList());
+        var stateStatusResponseList = states.stream().map(this::getStatus).collect(Collectors.toList());
 
         // init vote counters
         HashMap<String, Integer> candidateToCount = new HashMap<>();

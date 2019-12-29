@@ -444,9 +444,19 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
             response = getStateStatusResponse(request);
         } else {
             // find a server from the relevant state and return its response
-            LOG.info("get status from state " + request.getState() + " to state: " + this.state + ". sends the request to the relevant state");
+            LOG.info("get status from state " + this.state + " to state: " + request.getState() + ". sends the request to the relevant state");
             var electionsClient = getStateElectionsClient(request.getState());
-            response = electionsClient.electionsGetStatus(this.state);
+            while (true) {
+                try {
+                    response = electionsClient.electionsGetStatus(request.getState());
+                    break;
+                } catch (StatusRuntimeException e) {
+                    LOG.error("StatusRuntimeException");
+                    electionsClient.shutdown();
+                    electionsClient = getStateElectionsClient(request.getState());
+                }
+            }
+            electionsClient.shutdown();
         }
         LOG.info("status has been returned: " + response.toString());
         responseObserver.onNext(response);

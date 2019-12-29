@@ -1,10 +1,23 @@
 version: '3.1'
 
+networks:
+  ds_net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16
+
 services:
   zoo1:
     image: zookeeper
     restart: always
     hostname: zoo1
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.2
     ports:
       - 2181:2181
     environment:
@@ -15,6 +28,9 @@ services:
     image: zookeeper
     restart: always
     hostname: zoo2
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.3
     ports:
       - 2182:2181
     environment:
@@ -25,17 +41,119 @@ services:
     image: zookeeper
     restart: always
     hostname: zoo3
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.4
     ports:
       - 2183:2181
     environment:
       ZOO_MY_ID: 3
       ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181
-      
-  electionsServer1:
-    image: elections
+
+  california1:
+    build: .
     restart: always
-    hostname: electionsServer1
+    hostname: electionsServer
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.5
     environment:
-      IP: 172.18.0.4
+      IP: 172.18.0.5
       STATE: california
-      ZKHOST: 172.18.0.1:2181,172.18.0.2:2181,172.18.0.3:2181
+      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181,172.18.0.3:2181
+
+  texas1:
+    build: .
+    restart: always
+    hostname: electionsServer
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.6
+    environment:
+      IP: 172.18.0.6
+      STATE: texas
+      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181,172.18.0.3:2181
+
+  new_york1:
+    build: .
+    restart: always
+    hostname: electionsServer
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.7
+    environment:
+      IP: 172.18.0.7
+      STATE: new_york
+      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181,172.18.0.3:2181
+
+  california2:
+    build: .
+    restart: always
+    hostname: electionsServer
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.8
+    environment:
+      IP: 172.18.0.8
+      STATE: california
+      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181,172.18.0.3:2181
+
+  texas2:
+    build: .
+    restart: always
+    hostname: electionsServer
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.9
+    environment:
+      IP: 172.18.0.9
+      STATE: texas
+      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181,172.18.0.3:2181
+
+  new_york2:
+    build: .
+    restart: always
+    hostname: electionsServer
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.10
+    environment:
+      IP: 172.18.0.10
+      STATE: new_york
+      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181,172.18.0.3:2181
+
+  california3:
+    build: .
+    restart: always
+    hostname: electionsServer
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.11
+    environment:
+      IP: 172.18.0.11
+      STATE: california
+      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181,172.18.0.3:2181
+
+  texas3:
+    build: .
+    restart: always
+    hostname: electionsServer
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.12
+    environment:
+      IP: 172.18.0.12
+      STATE: texas
+      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181,172.18.0.3:2181
+
+  new_york3:
+    build: .
+    restart: always
+    hostname: electionsServer
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.13
+    environment:
+      IP: 172.18.0.13
+      STATE: new_york
+      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181,172.18.0.3:2181
