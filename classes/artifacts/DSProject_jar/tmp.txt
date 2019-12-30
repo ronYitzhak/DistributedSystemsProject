@@ -1,4 +1,7 @@
 docker pull curlimages/curl
 docker run --rm curlimages/curl -X POST -H "Content-Type: application/json" -d "{\"candidate\" : \"cand3\"}" 172.17.0.3:9999/states/california/voters/v1/vote
 
+docker build -t cmt .
+docker run --net=dsproject_jar_ds_net --rm -it cmt
+
 docker run --net=dsproject_jar_ds_net --rm curlimages/curl -X POST -H "Content-Type: application/json" -d "{\"candidate\" : \"cand3\"}" 172.18.0.7:9999/states/california5/voters/amit/vote
