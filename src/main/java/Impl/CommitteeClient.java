@@ -54,7 +54,7 @@ public class CommitteeClient {
                 noRetries++;
             }
         }
-        LOG.info("CommitteeClient error: max no of retries reached, elections couldn't be started.");
+        LOG.error("CommitteeClient error: max no of retries reached, elections couldn't be started.");
     }
 
     public void stopElections() {
@@ -73,7 +73,7 @@ public class CommitteeClient {
                 noRetries++;
             }
         }
-        LOG.info("CommitteeClient error: max no of retries reached, elections couldn't be stopped.");
+        LOG.error("CommitteeClient error: max no of retries reached, elections couldn't be stopped.");
     }
 
     /**
@@ -92,10 +92,10 @@ public class CommitteeClient {
         while (noRetries < maxNoRetries) {
             try {
                 stateStatus = electionsClient.electionsGetStatus(state);
-                LOG.info("CommitteeClient returned state status for state: " + state + ": " + stateStatus.toString() + ". no retries: " + noRetries);
+                LOG.debug("CommitteeClient returned state status for state: " + state + ". no retries: " + noRetries);
                 return stateStatus;
             } catch (StatusRuntimeException e) {
-                LOG.info("CommitteeClient could not get state status for state: " + state + ". retrying. current no retries: " + noRetries);
+                LOG.debug("CommitteeClient could not get state status for state: " + state + ". retrying. current no retries: " + noRetries);
                 electionsClient = getRandomElectionsClient(true);
                 noRetries++;
             }
@@ -155,14 +155,14 @@ public class CommitteeClient {
                     System.out.print("executing command: " + command + "...");
                     committeeClient.startElections();
                 } catch (Exception e) {
-                    System.out.print("Exception!!!!!!!!!!\n" + e);
+                    System.out.print("****Exception****\n" + e);
                 }
             } else if (command.equals("stop")) {
                 try {
                     System.out.print("executing command: " + command + "...");
                     committeeClient.stopElections();
                 } catch (Exception e) {
-                    System.out.print("Exception!!!!!!!!!!\n" + e);
+                    System.out.print("****Exception****\n" + e);
                 }
             } else if (command.equals("status")) {
                 try {
@@ -172,7 +172,7 @@ public class CommitteeClient {
                     var status = committeeClient.getStatus(state);
                     System.out.print("status: " + status.toString());
                 } catch (Exception e) {
-                    System.out.print("Exception!!!!!!!!!!\n" + e);
+                    System.out.print("****Exception****\n" + e);
                 }
             } else if (command.equals("global_status")) {
                 try {
@@ -180,7 +180,7 @@ public class CommitteeClient {
                     var globalStatus = committeeClient.getGlobalStatus();
                     System.out.print("global status: " + globalStatus.toString());
                 } catch (Exception e) {
-                    System.out.print("Exception!!!!!!!!!!\n" + e);
+                    System.out.print("****Exception****\n" + e);
                 }
             } else {
                 System.out.print("command: " + command + " is not valid. please insert a valid command.");
