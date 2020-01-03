@@ -24,6 +24,9 @@ public class Election {
 
     public static void main(String[] args) {
         //args list: self-address, state, zkhost, grpcPort, restport
+        //ch.qos.logback.classic.Logger tmpLogger = (ch.qos.logback.classic.Logger)LOG;
+        //tmpLogger.setLevel(ch.qos.logback.classic.Level.toLevel("info"));
+
         List<String> listArgs = new ArrayList<String>();
         Collections.addAll(listArgs, args);
         switch (listArgs.size()) {
