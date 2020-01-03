@@ -14,14 +14,7 @@ import java.util.List;
 
 /*
 * TODOs:
-* 1. impl committeeServer - start(GAL), stop(GAL), status (RON)
-*       What happens with "start on start?" nothing,
-*       "global master fall on start?" start adminRPC will call next global master.
-* 1.2 handle error flows (gRPC falls in the middle and such)
-* 2. submit candidates + servers lists (REST or gRPC) by committee (RON if Dolev answers)
-* 3. implement REST - vote function - to fix with server send broadcast (GAL)
-* 4. TESTING - docker (RON)
-* 5. change admin name to committeeServer
+* 1. add commit to global master to avoid failures
 * */
 
 @SpringBootApplication

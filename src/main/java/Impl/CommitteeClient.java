@@ -16,7 +16,7 @@ public class CommitteeClient {
     private static HashSet<String> candidates = CustomCSVParser.getCandidates();
     private static List<String> states = CustomCSVParser.getStates();
     private static Random random = new Random();
-    private static final int maxNoRetries = servers.size() / 2; // TODO: revisit
+    private static final int maxNoRetries = servers.size() / 2;
 
     // lazy cache of clients from any state
     private static List<ElectionsClient> electionsClients = new LinkedList<>();
@@ -128,7 +128,6 @@ public class CommitteeClient {
                     candidateToCount.put(key, count);
                 });
 
-        // TODO: random leading or list of leading?
         String leadingCandidate = candidateToCount.entrySet().stream()
                 .max(Comparator.comparing(Map.Entry::getValue))
                 .map(Map.Entry::getKey)

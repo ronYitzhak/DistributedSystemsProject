@@ -44,9 +44,6 @@ public class VotesController {
         var voters = server.getStateToVoters().get(stateName);
         if (!voters.contains(voterName))
             throw new VoterNotFoundException(voterName);
-        if (!payload.containsKey("candidate")) {
-            throw new VoterNotFoundException(voterName); // TODO: impl CandidateNotFoundException(); assume candidate is valid if exists
-        }
         var candidate = payload.get("candidate").toString();
         ElectionsServerOuterClass.VoteStatus.Status status = server.sendVote(voterName, candidate, stateName);
         if(status == ElectionsServerOuterClass.VoteStatus.Status.ELECTION_NOT_STARTED)
