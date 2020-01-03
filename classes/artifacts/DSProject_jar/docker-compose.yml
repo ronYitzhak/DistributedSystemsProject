@@ -50,6 +50,18 @@ services:
       STATE: california
       ZKHOST: zoo1:2181,zoo2:2181
 
+  california2:
+    image: electionserver
+    restart: always
+    hostname: california1
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.8
+    environment:
+      IP: 172.18.0.8
+      STATE: california
+      ZKHOST: zoo1:2181,zoo2:2181
+
   texas1:
     image: electionserver
     restart: always
@@ -60,4 +72,16 @@ services:
     environment:
       IP: 172.18.0.6
       STATE: texas
+      ZKHOST: zoo1:2181,zoo2:2181
+
+  new_york1:
+    image: electionserver
+    restart: always
+    hostname: new_york
+    networks:
+      ds_net:
+        ipv4_address: 172.18.0.7
+    environment:
+      IP: 172.18.0.7
+      STATE: new_york
       ZKHOST: zoo1:2181,zoo2:2181

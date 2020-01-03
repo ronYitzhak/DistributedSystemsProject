@@ -26,6 +26,11 @@ message CandidateStateStatus {
     int32 count = 2;
 }
 
+message CandidateGlobalStatus {
+    string candidateName = 1;
+    int32 electorsCount = 2;
+}
+
 message StateStatusResponse {
     string state = 1;
     repeated CandidateStateStatus candidatesStatus = 2;
@@ -33,9 +38,14 @@ message StateStatusResponse {
     string leadingCandidateName = 4;
 }
 
+message ElectorsStatusResponse {
+    repeated CandidateGlobalStatus candidatesStatus = 2;
+}
+
 message GlobalStatusResponse {
-    repeated StateStatusResponse candidatesStatus = 1;
-    string leadingCandidateName = 2;
+    repeated StateStatusResponse stateStatus = 1;
+    ElectorsStatusResponse electorsStatus = 2;
+    string leadingCandidateName = 3;
 }
 
 service ElectionsServer {

@@ -134,10 +134,24 @@ public class CommitteeClient {
                 .get();
 
         var resBuilder = ElectionsServerOuterClass.GlobalStatusResponse.newBuilder();
-        stateStatusResponseList.forEach(resBuilder::addCandidatesStatus);
+        stateStatusResponseList.forEach(resBuilder::addStateStatus);
+
+        var eleBuilder = ElectionsServerOuterClass.ElectorsStatusResponse.newBuilder();
+        stateStatusResponseList.stream().map(status -> ElectionsServerOuterClass.CandidateGlobalStatus
+                .newBuilder()
+                .setCandidateName(status.getLeadingCandidateName())
+                .setElectorsCount(status.getNumberOfElectors())
+                .build()).
+                collect(Collectors.groupingBy(status -> status.getCandidateName(),Collectors.summingInt(status -> status.getElectorsCount())))
+                .forEach((candidateName, candidateElectors) -> eleBuilder.addCandidatesStatus(ElectionsServerOuterClass.CandidateGlobalStatus
+                        .newBuilder()
+                        .setCandidateName(candidateName)
+                        .setElectorsCount(candidateElectors)
+                        .build()));
 
         return resBuilder
                 .setLeadingCandidateName(leadingCandidate)
+                .setElectorsStatus(eleBuilder)
                 .build();
     }
 
