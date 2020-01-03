@@ -39,60 +39,25 @@ services:
 
   california1:
     build: .
+    image: electionserver
     restart: always
-    hostname: electionsServer
+    hostname: california1
     networks:
       ds_net:
         ipv4_address: 172.18.0.5
     environment:
       IP: 172.18.0.5
       STATE: california
-      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181
+      ZKHOST: zoo1:2181,zoo2:2181
 
   texas1:
-    build: .
+    image: electionserver
     restart: always
-    hostname: electionsServer
+    hostname: texas1
     networks:
       ds_net:
         ipv4_address: 172.18.0.6
     environment:
       IP: 172.18.0.6
       STATE: texas
-      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181
-
-  new_york1:
-    build: .
-    restart: always
-    hostname: electionsServer
-    networks:
-      ds_net:
-        ipv4_address: 172.18.0.7
-    environment:
-      IP: 172.18.0.7
-      STATE: new_york
-      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181
-
-  california2:
-    build: .
-    restart: always
-    hostname: electionsServer
-    networks:
-      ds_net:
-        ipv4_address: 172.18.0.8
-    environment:
-      IP: 172.18.0.8
-      STATE: california
-      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181
-
-  texas2:
-    build: .
-    restart: always
-    hostname: electionsServer
-    networks:
-      ds_net:
-        ipv4_address: 172.18.0.9
-    environment:
-      IP: 172.18.0.9
-      STATE: texas
-      ZKHOST: 172.18.0.4:2181,172.18.0.2:2181
+      ZKHOST: zoo1:2181,zoo2:2181

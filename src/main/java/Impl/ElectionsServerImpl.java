@@ -17,9 +17,17 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImplBase implements Watcher {
+
+    private enum ModeStartStop {
+        START_PENDING,
+        STOP_PENDING,
+        IDLE,
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(ElectionsServerImpl.class);
     private static Random rand = new Random();
     private static String root = "/Application.Election";
@@ -29,6 +37,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     private ConcurrentHashMap<String, Integer> votesCount = new ConcurrentHashMap<>(); // candidateName -> total votes count
     private Pair<String, String> lastVote = null; // vote pending to be committed (clientName -> candidateName)
     private AtomicBoolean isPending = new AtomicBoolean(false);
+    private AtomicInteger pendingStartStop = new AtomicInteger(ModeStartStop.IDLE.ordinal());
     private boolean isActive = false;
     private final Object lockStartStop = new Object();
     private final Object lockVote = new Object();
@@ -81,6 +90,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     private void initZKnodes()  {
         ZooKeeperService.createNodeIfNotExists(root, CreateMode.PERSISTENT, new byte[]{});
         ZooKeeperService.createNodeIfNotExists(globalPath, CreateMode.PERSISTENT, new byte[]{});
+        ZooKeeperService.createNodeIfNotExists(globalPath + "/Commit", CreateMode.PERSISTENT, new byte[]{0});
         ZooKeeperService.createNodeIfNotExists(statePath, CreateMode.PERSISTENT, new byte[]{});
         ZooKeeperService.createNodeIfNotExists(statePath + "/LiveNodes", CreateMode.PERSISTENT, new byte[]{});
         ZooKeeperService.createNodeIfNotExists(globalPath + "/LiveNodes", CreateMode.PERSISTENT, new byte[]{});
@@ -244,7 +254,12 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
 
     /*** START: watcher methods ***/
     private void onNodeDataChanged(String nodePath){
-        if (!nodePath.equals(statePath + "/Commit")) return;
+        if (nodePath.equals(statePath + "/Commit")) onCommitDataChanged();
+        else if (nodePath.equals(globalPath + "/Commit")) onGlobalCommitDataChanged();
+        return;
+    }
+
+    private void onCommitDataChanged(){
         LOG.info("Server: " + this.toString() + " commit NodeDataChanged");
         if (!(isPending.get() && lastVote != null)) return; //for safety
         LOG.info("Server: " + this.toString() + " isPending");
@@ -262,6 +277,15 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
         LOG.info("Server: " + this.toString() + " voterName: "+voterName +" newVote: "+ newVote);
         lastVote = null;
         isPending.set(false);
+    }
+
+    private void onGlobalCommitDataChanged() {
+        if (pendingStartStop.get() == ModeStartStop.IDLE.ordinal()) return;
+        else if (pendingStartStop.get() == ModeStartStop.START_PENDING.ordinal())
+            onStart();
+        else if (pendingStartStop.get() == ModeStartStop.STOP_PENDING.ordinal())
+            onStop();
+        pendingStartStop.set(ModeStartStop.IDLE.ordinal());
     }
 
     private void onNodeDeleted(String nodePath) {
@@ -283,6 +307,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
     private void onGlobalMasterDelete() {
         LOG.info("Server: " + this.toString() + "global master NodeDeleted");
         globalMaster.shutdown();
+        pendingStartStop.set(ModeStartStop.IDLE.ordinal());
         globalMasterPath = ZooKeeperService.getGlobalMaster(false);
         LOG.info("Server: " + this.toString() + " chose global master: " + globalMasterPath);
         if(globalMasterPath.equals(globalServerPath)) configureGlobalMaster();
@@ -356,7 +381,9 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
-        onStart();
+        while (pendingStartStop.compareAndExchange(ModeStartStop.IDLE.ordinal(), ModeStartStop.START_PENDING.ordinal()) != ModeStartStop.IDLE.ordinal()) ;
+        pendingStartStop.set(ModeStartStop.START_PENDING.ordinal());
+        ZooKeeperService.setWatcherOnNode(globalPath + "/Commit");
         responseObserver.onCompleted();
     }
 
@@ -366,7 +393,9 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                 .newBuilder()
                 .build();
         responseObserver.onNext(rep);
-        onStop();
+        while (pendingStartStop.compareAndExchange(ModeStartStop.IDLE.ordinal(), ModeStartStop.STOP_PENDING.ordinal()) != ModeStartStop.IDLE.ordinal()) ;
+        pendingStartStop.set(ModeStartStop.STOP_PENDING.ordinal());
+        ZooKeeperService.setWatcherOnNode(globalPath + "/Commit");
         responseObserver.onCompleted();
     }
 
@@ -402,6 +431,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                         }
                     }
                 }
+                ZooKeeperService.incDataByOne(globalPath + "/Commit");
             }
         }
         responseObserver.onCompleted();
@@ -428,6 +458,7 @@ public class ElectionsServerImpl extends ElectionsServerGrpc.ElectionsServerImpl
                         }
                     }
                 }
+                ZooKeeperService.incDataByOne(globalPath + "/Commit");
             }
         }
         responseObserver.onCompleted();
