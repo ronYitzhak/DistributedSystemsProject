@@ -1,6 +1,9 @@
 # Distributed Systems Project
 Distributed Election system for the USA
 
+## Technologies
+ZooKeeper, Docker Containers, gRPC, protobuf
+
 ## Implementation Summary
 - Each state is represented by a shard of nodes
 - Each node is a valid elections server, which can receive vote requests from voters
